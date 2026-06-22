@@ -1,0 +1,8 @@
+indicateur,valeur
+Taux retard vol 1 (reference),0.0
+Taux retard vol 2 si 1er vol en retard (%),22.03
+Ecart vol 2 vs vol 1 si 1er retard (pts),-77.97
+P(retard arrivee suivant | 1er vol retard) (%),22.37
+Lift propagation 1er vol -> suivant,1.01
+Hub max lift turnaround,ORD
+Lift max turnaround,1.21

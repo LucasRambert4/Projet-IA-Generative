@@ -1,0 +1,9 @@
+condition,condition_met,target,nb_vols,prob_percent,baseline_percent,lift
+Retard arrivee 1er vol,non,Retard arrivee vol suivant,36694,22.01,22.08,1.0
+Retard arrivee 1er vol,oui,Retard arrivee vol suivant,8535,22.37,22.08,1.01
+Retard arrivee 1er vol,non,Retard depart vol suivant,36694,17.83,17.92,1.0
+Retard arrivee 1er vol,oui,Retard depart vol suivant,8535,18.3,17.92,1.02
+Retard depart 1er vol,non,Retard arrivee vol suivant,38414,21.99,22.08,1.0
+Retard depart 1er vol,oui,Retard arrivee vol suivant,6815,22.58,22.08,1.02
+Retard depart 1er vol,non,Retard depart vol suivant,38414,17.85,17.92,1.0
+Retard depart 1er vol,oui,Retard depart vol suivant,6815,18.33,17.92,1.02

@@ -1,0 +1,9 @@
+ORIGIN_AIRPORT,prev_arr_delayed,nb_vols,nb_retards_depart,taux_retard_depart_percent,prev_arrival_delayed_label,baseline_depart_percent,lift
+ORD,0.0,539,107,19.85,Vol precedent a l'heure,16.34,1.21
+DFW,0.0,555,108,19.46,Vol precedent a l'heure,17.51,1.11
+SEA,0.0,580,110,18.97,Vol precedent a l'heure,17.04,1.11
+ATL,0.0,576,108,18.75,Vol precedent a l'heure,17.38,1.08
+JFK,0.0,558,100,17.92,Vol precedent a l'heure,17.44,1.03
+LAX,0.0,577,98,16.98,Vol precedent a l'heure,17.46,0.97
+SFO,0.0,566,91,16.08,Vol precedent a l'heure,17.04,0.94
+DEN,0.0,541,80,14.79,Vol precedent a l'heure,16.74,0.88

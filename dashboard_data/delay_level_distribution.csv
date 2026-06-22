@@ -1,0 +1,6 @@
+DELAY_LEVEL,nb_vols,nb_retards,retard_moyen_arrivee,retard_moyen_depart,distance_moyenne,taux_retard_percent,part_percent
+En avance ou a l'heure,3500899,0,-12.55,-2.91,827.41,0.0,60.16
+Retard leger,1254741,0,5.14,4.36,799.58,0.0,21.56
+Retard 15-30 min,412835,412835,20.98,17.09,847.26,100.0,7.09
+Retard 30-60 min,325013,325013,41.94,37.85,828.73,100.0,5.59
+Retard > 60 min,325591,325591,123.96,120.01,817.9,100.0,5.6

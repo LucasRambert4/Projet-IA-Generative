@@ -1,0 +1,15 @@
+AIRLINE,nb_vols,nb_retards,retard_moyen_arrivee,retard_moyen_depart,distance_moyenne,taux_retard_percent,part_vols_reseau_percent,part_retards_reseau_percent,indice_vs_taille_flotte,ecart_vs_reseau_pts,AIRLINE_NAME,AIRLINE_LABEL
+NK,4095,1153,13.09,14.98,978.2,28.16,2.05,3.15,1.54,9.85,Spirit Air Lines,Spirit Air Lines
+F9,3088,790,11.51,12.4,969.24,25.58,1.54,2.16,1.4,7.27,Frontier Airlines Inc.,Frontier Airlines Inc.
+B6,9063,2010,7.08,11.7,1074.84,22.18,4.53,5.49,1.21,3.87,JetBlue Airways,JetBlue Airways
+MQ,10218,2078,6.46,10.11,424.84,20.34,5.11,5.68,1.11,2.03,American Eagle Airlines Inc.,American Eagle Airlines Inc.
+UA,17758,3507,4.58,13.56,1270.76,19.75,8.88,9.58,1.08,1.44,United Air Lines Inc.,United Air Lines Inc.
+WN,43354,8208,4.58,10.72,740.68,18.93,21.68,22.42,1.03,0.62,Southwest Airlines Co.,Southwest Airlines Co.
+EV,19576,3695,6.11,8.24,464.86,18.88,9.79,10.09,1.03,0.57,Atlantic Southeast Airlines,Atlantic Southeast Airlines
+OO,20235,3803,5.93,7.78,499.48,18.79,10.12,10.39,1.03,0.48,Skywest Airlines Inc.,Skywest Airlines Inc.
+AA,25030,4641,4.02,9.32,1039.34,18.54,12.52,12.68,1.01,0.23,American Airlines Inc.,American Airlines Inc.
+VX,2113,388,4.52,9.37,1377.35,18.36,1.06,1.06,1.0,0.05,Virgin America,Virgin America
+US,6885,1262,3.74,6.0,907.51,18.33,3.44,3.45,1.0,0.02,US Airways Inc.,US Airways Inc.
+DL,30032,4051,0.24,7.39,852.44,13.49,15.02,11.06,0.74,-4.82,Delta Air Lines Inc.,Delta Air Lines Inc.
+AS,5887,726,-1.54,1.37,1186.88,12.33,2.94,1.98,0.67,-5.98,Alaska Airlines Inc.,Alaska Airlines Inc.
+HA,2666,301,2.29,0.84,684.92,11.29,1.33,0.82,0.62,-7.02,Hawaiian Airlines Inc.,Hawaiian Airlines Inc.

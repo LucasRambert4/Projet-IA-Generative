@@ -1,0 +1,17 @@
+flight_seq,nb_vols,nb_retards_arrivee,nb_retards_depart,first_flight_delayed,first_flight_delayed_label,taux_retard_arrivee_percent,taux_retard_depart_percent,baseline_arrivee_percent,baseline_depart_percent
+1,19169,0,12,0,Premier vol a l'heure,0.0,0.06,21.2,17.12
+2,19169,4194,3395,0,Premier vol a l'heure,21.88,17.71,21.2,17.12
+3,10503,2308,1867,0,Premier vol a l'heure,21.97,17.78,21.2,17.12
+4,4601,1038,843,0,Premier vol a l'heure,22.56,18.32,21.2,17.12
+5,1693,380,303,0,Premier vol a l'heure,22.45,17.9,21.2,17.12
+6,532,116,102,0,Premier vol a l'heure,21.8,19.17,21.2,17.12
+7,153,31,24,0,Premier vol a l'heure,20.26,15.69,21.2,17.12
+8,36,7,6,0,Premier vol a l'heure,19.44,16.67,21.2,17.12
+1,4620,4620,3659,1,Premier vol en retard,100.0,79.2,21.2,17.12
+2,4620,1018,833,1,Premier vol en retard,22.03,18.03,21.2,17.12
+3,2368,548,449,1,Premier vol en retard,23.14,18.96,21.2,17.12
+4,1023,217,181,1,Premier vol en retard,21.21,17.69,21.2,17.12
+5,368,74,61,1,Premier vol en retard,20.11,16.58,21.2,17.12
+6,121,41,30,1,Premier vol en retard,33.88,24.79,21.2,17.12
+7,25,8,7,1,Premier vol en retard,32.0,28.0,21.2,17.12
+8,7,3,1,1,Premier vol en retard,42.86,14.29,21.2,17.12

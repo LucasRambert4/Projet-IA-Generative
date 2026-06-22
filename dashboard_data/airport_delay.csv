@@ -1,0 +1,629 @@
+ORIGIN_AIRPORT,nb_vols,nb_retards,retard_moyen_arrivee,retard_moyen_depart,distance_moyenne,taux_retard_percent,AIRPORT_NAME,CITY,STATE,LATITUDE,LONGITUDE,AIRPORT_LABEL
+10135,239,41,6.56,9.37,596.45,17.15,,,,,,10135
+10136,201,22,-5.74,3.92,158.0,10.95,,,,,,10136
+10140,1816,236,0.7,5.94,729.92,13.0,,,,,,10140
+10141,71,9,0.66,1.49,257.0,12.68,,,,,,10141
+10146,87,11,10.75,8.67,145.0,12.64,,,,,,10146
+10154,28,11,25.54,22.86,172.0,39.29,,,,,,10154
+10155,148,7,-11.98,-3.97,89.0,4.73,,,,,,10155
+10157,122,20,9.02,11.93,250.0,16.39,,,,,,10157
+10158,248,16,-4.7,-0.08,837.25,6.45,,,,,,10158
+10165,9,5,19.56,17.56,1192.0,55.56,,,,,,10165
+10170,31,3,1.35,-1.68,253.0,9.68,,,,,,10170
+10185,282,43,0.54,3.46,341.33,15.25,,,,,,10185
+10208,223,29,2.96,0.54,143.0,13.0,,,,,,10208
+10257,734,67,-6.01,1.63,688.86,9.13,,,,,,10257
+10268,57,0,-17.39,-5.98,234.0,0.0,,,,,,10268
+10279,307,37,1.68,4.04,425.24,12.05,,,,,,10279
+10299,1234,142,-1.73,1.21,1324.91,11.51,,,,,,10299
+10333,53,5,4.13,-1.32,198.0,9.43,,,,,,10333
+10372,59,6,2.25,2.85,373.95,10.17,,,,,,10372
+10397,32588,2946,-4.21,4.23,639.18,9.04,,,,,,10397
+10408,260,45,4.12,3.24,272.43,17.31,,,,,,10408
+10423,4021,470,1.02,7.6,799.68,11.69,,,,,,10423
+10431,284,57,8.44,8.36,336.79,20.07,,,,,,10431
+10434,113,16,6.74,7.45,592.12,14.16,,,,,,10434
+10469,121,18,-2.68,-1.25,121.85,14.88,,,,,,10469
+10529,1714,126,-6.08,2.12,815.36,7.35,,,,,,10529
+10551,84,14,4.61,0.57,399.0,16.67,,,,,,10551
+10561,183,21,-0.15,-0.22,492.46,11.48,,,,,,10561
+10577,62,12,7.56,4.45,378.0,19.35,,,,,,10577
+10581,27,5,17.07,20.11,695.44,18.52,,,,,,10581
+10599,1146,138,1.51,6.82,509.44,12.04,,,,,,10599
+10620,264,10,-7.28,-2.85,501.14,3.79,,,,,,10620
+10627,339,37,-3.62,1.27,513.94,10.91,,,,,,10627
+10631,62,2,-1.95,-0.29,199.0,3.23,,,,,,10631
+10685,238,20,-6.89,-1.42,419.05,8.4,,,,,,10685
+10693,4477,543,-1.12,5.91,668.28,12.13,,,,,,10693
+10713,1160,131,2.29,6.18,631.72,11.29,,,,,,10713
+10721,10164,1239,-1.71,5.11,970.33,12.19,,,,,,10721
+10728,87,11,-3.28,1.06,270.0,12.64,,,,,,10728
+10731,85,11,0.76,8.86,238.0,12.94,,,,,,10731
+10732,96,23,6.8,11.76,1353.19,23.96,,,,,,10732
+10739,53,9,5.62,4.89,114.0,16.98,,,,,,10739
+10747,204,18,-6.09,2.33,386.47,8.82,,,,,,10747
+10754,81,6,-0.23,0.26,517.83,7.41,,,,,,10754
+10779,62,1,-9.47,-5.55,358.0,1.61,,,,,,10779
+10781,659,110,5.81,7.77,360.31,16.69,,,,,,10781
+10785,348,53,3.58,5.8,430.95,15.23,,,,,,10785
+10792,1593,156,-1.3,3.99,570.58,9.79,,,,,,10792
+10800,1768,218,0.97,2.57,459.58,12.33,,,,,,10800
+10821,8022,1246,1.7,8.15,753.14,15.53,,,,,,10821
+10849,335,17,-7.08,-2.82,586.21,5.07,,,,,,10849
+10868,434,62,5.37,8.04,482.54,14.29,,,,,,10868
+10874,491,42,-1.47,3.23,535.03,8.55,,,,,,10874
+10918,53,4,-5.45,-4.89,221.0,7.55,,,,,,10918
+10926,62,9,-2.1,-5.48,186.5,14.52,,,,,,10926
+10980,417,57,3.69,4.68,267.04,13.67,,,,,,10980
+10990,237,24,1.06,5.14,463.86,10.13,,,,,,10990
+10994,1207,160,1.72,6.45,541.4,13.26,,,,,,10994
+11003,532,69,1.82,2.4,385.23,12.97,,,,,,11003
+11013,57,7,3.51,3.11,284.0,12.28,,,,,,11013
+11042,3224,366,-1.7,3.88,696.26,11.35,,,,,,11042
+11049,223,21,-5.64,-0.4,132.52,9.42,,,,,,11049
+11057,9572,1398,1.62,4.67,700.78,14.61,,,,,,11057
+11066,2188,213,-2.18,4.23,682.97,9.73,,,,,,11066
+11067,206,9,-8.95,-1.6,218.82,4.37,,,,,,11067
+11076,62,5,-5.71,-3.47,360.0,8.06,,,,,,11076
+11097,31,5,4.71,4.1,298.0,16.13,,,,,,11097
+11109,610,87,5.08,6.49,583.41,14.26,,,,,,11109
+11111,123,9,1.26,5.93,402.71,7.32,,,,,,11111
+11122,138,13,-4.15,-2.29,281.52,9.42,,,,,,11122
+11140,366,52,5.52,9.6,241.37,14.21,,,,,,11140
+11146,224,38,4.1,4.5,447.52,16.96,,,,,,11146
+11150,112,15,4.05,5.8,83.0,13.39,,,,,,11150
+11193,1919,241,-1.4,2.43,688.1,12.56,,,,,,11193
+11203,145,13,-2.53,-2.72,213.0,8.97,,,,,,11203
+11252,119,7,-4.76,-1.28,366.0,5.88,,,,,,11252
+11259,5930,955,5.7,10.43,690.28,16.1,,,,,,11259
+11267,753,84,0.34,2.85,475.06,11.16,,,,,,11267
+11274,87,5,-7.53,-1.51,147.0,5.75,,,,,,11274
+11278,6819,870,-1.06,4.66,765.27,12.76,,,,,,11278
+11292,18136,2260,-1.25,5.87,888.62,12.46,,,,,,11292
+11298,21044,2760,0.73,6.85,784.72,13.12,,,,,,11298
+11308,118,24,6.37,5.05,170.0,20.34,,,,,,11308
+11315,61,3,0.43,3.7,481.0,4.92,,,,,,11315
+11337,223,40,5.15,3.0,272.2,17.94,,,,,,11337
+11413,178,18,4.94,9.87,503.29,10.11,,,,,,11413
+11423,710,61,-1.38,4.61,583.05,8.59,,,,,,11423
+11433,9925,1162,-0.84,4.91,696.1,11.71,,,,,,11433
+11447,49,4,-6.59,-1.63,332.18,8.16,,,,,,11447
+11471,62,6,5.95,11.5,269.0,9.68,,,,,,11471
+11481,376,24,-3.03,1.65,381.64,6.38,,,,,,11481
+11503,4,0,-16.0,-8.5,721.0,0.0,,,,,,11503
+11525,53,4,-3.62,-5.51,200.0,7.55,,,,,,11525
+11537,195,30,4.84,0.22,400.4,15.38,,,,,,11537
+11540,1046,116,1.4,5.92,646.31,11.09,,,,,,11540
+11577,57,2,-6.19,-4.32,398.0,3.51,,,,,,11577
+11587,53,3,7.81,9.34,306.0,5.66,,,,,,11587
+11603,328,44,0.21,4.08,602.8,13.41,,,,,,11603
+11612,399,59,4.96,6.84,335.74,14.79,,,,,,11612
+11617,55,5,3.58,3.69,433.0,9.09,,,,,,11617
+11618,9622,1360,-1.88,8.38,1065.5,14.13,,,,,,11618
+11624,151,12,-5.87,-2.81,552.84,7.95,,,,,,11624
+11630,177,18,-3.05,-2.85,1087.44,10.17,,,,,,11630
+11637,527,58,-0.53,3.0,474.2,11.01,,,,,,11637
+11638,656,80,3.9,4.48,554.42,12.2,,,,,,11638
+11641,150,12,-0.77,3.66,331.0,8.0,,,,,,11641
+11648,123,9,-9.02,-6.08,642.4,7.32,,,,,,11648
+11695,158,40,12.28,10.53,119.0,25.32,,,,,,11695
+11697,5812,839,1.35,7.3,1047.07,14.44,,,,,,11697
+11721,413,32,-5.59,-0.86,538.93,7.75,,,,,,11721
+11775,445,50,1.42,4.02,410.47,11.24,,,,,,11775
+11778,180,12,-6.91,-0.93,348.24,6.67,,,,,,11778
+11823,511,42,-2.48,0.08,335.34,8.22,,,,,,11823
+11865,88,8,1.18,5.64,347.17,9.09,,,,,,11865
+11867,62,6,-9.24,-2.45,404.0,9.68,,,,,,11867
+11884,828,79,1.29,4.17,604.25,9.54,,,,,,11884
+11898,90,11,2.84,-0.5,284.0,12.22,,,,,,11898
+11905,59,4,4.75,7.39,140.0,6.78,,,,,,11905
+11921,271,30,5.07,5.89,559.92,11.07,,,,,,11921
+11953,234,29,3.35,5.74,298.54,12.39,,,,,,11953
+11973,304,38,-0.8,2.65,399.96,12.5,,,,,,11973
+11977,489,62,1.55,1.59,250.36,12.68,,,,,,11977
+11980,57,5,-10.67,-3.84,561.0,8.77,,,,,,11980
+11982,371,30,-3.78,0.87,229.26,8.09,,,,,,11982
+11986,928,105,-2.34,1.42,385.26,11.31,,,,,,11986
+11995,598,75,-0.63,3.83,396.19,12.54,,,,,,11995
+11996,631,58,-2.01,2.05,470.04,9.19,,,,,,11996
+12003,190,15,-3.74,-1.62,600.82,7.89,,,,,,12003
+12007,88,16,5.26,0.42,241.0,18.18,,,,,,12007
+12016,31,3,1.45,-0.84,3801.0,9.68,,,,,,12016
+12094,20,3,-5.9,-4.2,141.0,15.0,,,,,,12094
+12129,84,11,10.69,13.27,141.52,13.1,,,,,,12129
+12156,141,11,-0.45,0.64,556.56,7.8,,,,,,12156
+12173,3780,269,-1.9,1.98,1245.81,7.12,,,,,,12173
+12177,53,4,-2.25,-0.11,501.0,7.55,,,,,,12177
+12191,4718,659,2.37,8.46,697.87,13.97,,,,,,12191
+12197,721,138,4.37,6.4,864.42,19.14,,,,,,12197
+12206,287,32,1.86,6.84,283.85,11.15,,,,,,12206
+12217,390,35,-2.66,1.72,307.38,8.97,,,,,,12217
+12255,53,4,-2.87,-3.79,298.0,7.55,,,,,,12255
+12264,2996,342,-2.98,6.02,1365.32,11.42,,,,,,12264
+12265,22,3,1.23,2.77,865.18,13.64,,,,,,12265
+12266,13211,1978,1.7,7.44,820.71,14.97,,,,,,12266
+12278,698,65,-1.72,1.93,560.26,9.31,,,,,,12278
+12280,201,21,-0.66,1.15,306.21,10.45,,,,,,12280
+12323,215,20,-1.04,0.93,318.06,9.3,,,,,,12323
+12335,58,4,-8.45,-2.48,168.55,6.9,,,,,,12335
+12339,2373,247,-2.41,3.95,696.39,10.41,,,,,,12339
+12343,53,4,2.45,4.09,156.15,7.55,,,,,,12343
+12389,221,20,-3.47,0.16,653.71,9.05,,,,,,12389
+12391,366,40,-1.14,8.77,694.57,10.93,,,,,,12391
+12402,503,24,-1.32,-1.93,306.4,4.77,,,,,,12402
+12441,158,16,-5.64,2.36,331.29,10.13,,,,,,12441
+12448,654,45,-6.87,-0.24,393.37,6.88,,,,,,12448
+12451,1712,195,-1.17,2.95,577.11,11.39,,,,,,12451
+12478,8303,1261,-1.69,7.59,1476.68,15.19,,,,,,12478
+12511,58,4,-8.53,-6.69,327.0,6.9,,,,,,12511
+12519,75,4,-10.96,-8.25,259.4,5.33,,,,,,12519
+12523,336,69,5.9,4.85,469.97,20.54,,,,,,12523
+12758,967,68,-2.08,0.14,908.67,7.03,,,,,,12758
+12819,186,37,3.81,2.94,423.17,19.89,,,,,,12819
+12884,222,29,0.23,-1.81,200.96,13.06,,,,,,12884
+12888,53,2,-7.81,0.36,113.0,3.77,,,,,,12888
+12889,12688,1977,1.8,6.55,1015.3,15.58,,,,,,12889
+12891,124,8,-1.1,3.43,140.0,6.45,,,,,,12891
+12892,17728,2486,0.53,5.25,1269.68,14.02,,,,,,12892
+12896,436,69,7.76,10.35,393.5,15.83,,,,,,12896
+12898,117,17,3.12,5.36,988.74,14.53,,,,,,12898
+12915,198,12,-8.46,-2.96,201.67,6.06,,,,,,12915
+12945,587,52,-2.9,0.57,358.68,8.86,,,,,,12945
+12951,431,62,1.42,4.64,335.89,14.39,,,,,,12951
+12953,8590,1446,-1.5,7.41,803.29,16.83,,,,,,12953
+12954,774,130,3.5,4.83,731.45,16.8,,,,,,12954
+12982,881,103,-1.64,0.97,911.76,11.69,,,,,,12982
+12992,1048,112,-1.12,3.89,499.69,10.69,,,,,,12992
+13029,288,26,-1.99,-0.68,460.65,9.03,,,,,,13029
+13061,203,21,-3.29,2.36,356.22,10.34,,,,,,13061
+13076,166,17,5.17,7.23,172.2,10.24,,,,,,13076
+13127,53,1,-9.87,-4.79,461.0,1.89,,,,,,13127
+13158,600,68,2.51,6.56,457.98,11.33,,,,,,13158
+13184,142,22,5.15,4.48,233.96,15.49,,,,,,13184
+13198,3555,332,-3.13,3.2,723.18,9.34,,,,,,13198
+13204,9047,1073,-0.37,4.89,942.77,11.86,,,,,,13204
+13230,285,22,-5.53,0.94,568.45,7.72,,,,,,13230
+13232,7617,786,-2.72,4.9,805.27,10.32,,,,,,13232
+13241,84,13,10.04,9.96,222.52,15.48,,,,,,13241
+13244,1520,154,-3.02,2.76,549.63,10.13,,,,,,13244
+13256,238,15,-5.48,0.48,392.5,6.3,,,,,,13256
+13264,243,27,-0.68,1.56,540.72,11.11,,,,,,13264
+13277,309,40,1.46,3.59,282.28,12.94,,,,,,13277
+13290,151,9,-8.49,-1.54,459.74,5.96,,,,,,13290
+13296,577,58,-0.1,6.63,617.25,10.05,,,,,,13296
+13303,5958,839,0.18,5.49,1059.2,14.08,,,,,,13303
+13342,2642,258,-2.86,2.46,656.74,9.77,,,,,,13342
+13344,62,9,-1.42,0.48,118.0,14.52,,,,,,13344
+13360,116,5,-2.67,4.77,442.0,4.31,,,,,,13360
+13367,308,27,-4.5,0.13,446.31,8.77,,,,,,13367
+13377,279,38,2.16,3.57,343.67,13.62,,,,,,13377
+13422,437,58,3.89,4.22,416.38,13.27,,,,,,13422
+13433,218,22,-4.95,-2.19,528.63,10.09,,,,,,13433
+13459,26,4,-4.38,1.96,303.0,15.38,,,,,,13459
+13476,241,34,2.51,4.09,300.03,14.11,,,,,,13476
+13485,838,84,-1.12,2.16,362.99,10.02,,,,,,13485
+13486,171,13,-4.62,-1.12,615.39,7.6,,,,,,13486
+13487,10584,1064,-3.08,3.29,786.54,10.05,,,,,,13487
+13495,3663,394,-1.37,5.09,747.01,10.76,,,,,,13495
+13502,6,0,-5.33,-5.67,196.0,0.0,,,,,,13502
+13541,11,2,0.73,1.91,173.0,18.18,,,,,,13541
+13577,507,81,2.33,4.42,498.85,15.98,,,,,,13577
+13795,112,26,11.47,9.4,399.0,23.21,,,,,,13795
+13796,4016,514,0.98,4.84,731.38,12.8,,,,,,13796
+13830,1823,162,-1.33,2.15,1170.9,8.89,,,,,,13830
+13851,1641,171,-1.63,3.53,607.05,10.42,,,,,,13851
+13871,1501,150,-2.32,2.52,660.85,9.99,,,,,,13871
+13873,62,10,11.61,8.63,516.03,16.13,,,,,,13873
+13891,1742,245,2.71,5.42,560.75,14.06,,,,,,13891
+13930,27652,3650,-2.48,4.78,714.62,13.2,,,,,,13930
+13931,914,118,-1.82,4.42,531.74,12.91,,,,,,13931
+13933,62,5,-3.66,4.35,1151.0,8.06,,,,,,13933
+13964,36,14,27.86,25.64,499.22,38.89,,,,,,13964
+13970,62,9,6.03,9.48,389.05,14.52,,,,,,13970
+14006,62,4,-4.89,-2.84,342.0,6.45,,,,,,14006
+14025,13,4,12.85,17.54,1334.0,30.77,,,,,,14025
+14027,1742,245,1.16,5.26,892.12,14.06,,,,,,14027
+14057,4550,389,-4.71,1.48,1048.11,8.55,,,,,,14057
+14098,114,18,2.88,5.18,508.0,15.79,,,,,,14098
+14100,6094,851,-1.82,6.01,1020.49,13.96,,,,,,14100
+14107,12921,1764,-0.02,4.62,962.31,13.65,,,,,,14107
+14108,476,61,-1.61,1.04,368.45,12.82,,,,,,14108
+14109,53,5,4.74,2.55,232.13,9.43,,,,,,14109
+14113,57,2,-2.3,-6.65,150.0,3.51,,,,,,14113
+14122,2131,149,-4.88,3.57,733.36,6.99,,,,,,14122
+14150,62,3,-0.87,1.56,243.0,4.84,,,,,,14150
+14193,478,44,-1.96,2.93,399.69,9.21,,,,,,14193
+14222,9,4,100.0,89.11,2599.0,44.44,,,,,,14222
+14252,210,22,-0.69,3.16,741.54,10.48,,,,,,14252
+14254,62,8,-3.42,-1.89,1398.0,12.9,,,,,,14254
+14256,62,17,7.6,6.44,77.0,27.42,,,,,,14256
+14262,673,94,3.42,5.32,587.36,13.97,,,,,,14262
+14307,1098,111,-2.84,4.06,682.84,10.11,,,,,,14307
+14321,477,75,3.09,5.98,575.67,15.72,,,,,,14321
+14457,236,31,2.27,7.17,582.47,13.14,,,,,,14457
+14487,62,6,5.61,13.66,199.0,9.68,,,,,,14487
+14489,200,19,-6.16,-3.37,603.58,9.5,,,,,,14489
+14492,3002,332,-1.94,3.8,673.05,11.06,,,,,,14492
+14520,88,10,-4.72,-2.86,153.66,11.36,,,,,,14520
+14524,1647,242,0.31,4.69,521.94,14.69,,,,,,14524
+14543,57,5,-8.75,-2.21,260.0,8.77,,,,,,14543
+14570,1144,156,1.39,4.56,596.81,13.64,,,,,,14570
+14574,223,24,-3.03,-0.6,420.2,10.76,,,,,,14574
+14576,737,85,0.2,4.7,478.27,11.53,,,,,,14576
+14588,92,11,-3.84,5.21,435.0,11.96,,,,,,14588
+14633,185,18,-0.82,3.86,330.17,9.73,,,,,,14633
+14635,1766,195,-2.87,2.02,924.93,11.04,,,,,,14635
+14674,93,10,3.11,10.81,551.0,10.75,,,,,,14674
+14679,6209,705,-0.31,3.75,989.4,11.35,,,,,,14679
+14683,2624,229,-3.41,4.97,693.87,8.73,,,,,,14683
+14685,661,80,1.58,6.44,504.31,12.1,,,,,,14685
+14689,565,87,6.83,5.85,401.73,15.4,,,,,,14689
+14696,415,64,6.38,7.63,287.3,15.42,,,,,,14696
+14698,250,47,6.32,5.94,215.24,18.8,,,,,,14698
+14709,81,10,-1.06,-2.57,303.22,12.35,,,,,,14709
+14711,62,5,-4.53,-3.77,528.0,8.06,,,,,,14711
+14730,843,85,-3.88,2.95,534.6,10.08,,,,,,14730
+14747,10388,1327,-1.62,3.74,1246.25,12.77,,,,,,14747
+14771,14170,2239,1.78,6.29,1207.96,15.8,,,,,,14771
+14783,531,55,-1.59,1.98,458.39,10.36,,,,,,14783
+14794,203,27,2.24,2.5,346.83,13.3,,,,,,14794
+14814,556,68,1.28,4.16,330.53,12.23,,,,,,14814
+14828,93,20,3.34,1.44,124.33,21.51,,,,,,14828
+14831,3481,381,1.33,3.58,755.13,10.95,,,,,,14831
+14842,149,14,-5.09,4.94,229.0,9.4,,,,,,14842
+14843,1868,282,2.31,5.69,1368.46,15.1,,,,,,14843
+14869,8763,718,-3.39,1.23,730.77,8.19,,,,,,14869
+14893,3618,464,2.02,4.45,686.28,12.82,,,,,,14893
+14905,62,12,3.1,4.65,216.0,19.35,,,,,,14905
+14908,3542,419,0.19,3.82,815.29,11.83,,,,,,14908
+14952,150,15,-0.82,2.69,347.28,10.0,,,,,,14952
+14960,122,4,-6.36,4.66,113.0,3.28,,,,,,14960
+14986,305,31,3.76,7.87,714.38,10.16,,,,,,14986
+15016,4314,422,-3.28,3.75,701.84,9.78,,,,,,15016
+15024,237,29,-1.25,1.45,1012.7,12.24,,,,,,15024
+15027,68,10,8.9,8.66,662.6,14.71,,,,,,15027
+15041,62,3,-4.4,-0.89,222.0,4.84,,,,,,15041
+15048,57,4,-8.42,-4.49,436.0,7.02,,,,,,15048
+15070,62,9,-1.87,3.18,1053.5,14.52,,,,,,15070
+15096,640,80,-0.75,2.88,513.78,12.5,,,,,,15096
+15249,279,22,-3.05,0.81,354.77,7.89,,,,,,15249
+15295,88,8,-7.44,-3.77,213.0,9.09,,,,,,15295
+15304,5143,521,-2.15,4.14,841.88,10.13,,,,,,15304
+15323,159,20,4.77,6.23,227.0,12.58,,,,,,15323
+15356,277,37,-3.56,3.55,721.41,13.36,,,,,,15356
+15370,1319,127,-2.76,2.53,510.13,9.63,,,,,,15370
+15376,1311,144,-1.56,3.3,704.05,10.98,,,,,,15376
+15380,208,27,-1.8,1.69,219.01,12.98,,,,,,15380
+15389,87,7,-1.22,-0.9,175.0,8.05,,,,,,15389
+15401,88,14,5.0,9.32,181.0,15.91,,,,,,15401
+15411,227,16,-4.67,1.27,122.96,7.05,,,,,,15411
+15412,629,77,1.25,3.79,518.52,12.24,,,,,,15412
+15497,14,4,-1.07,0.93,801.0,28.57,,,,,,15497
+15607,88,12,6.28,7.06,208.0,13.64,,,,,,15607
+15624,415,36,-0.73,3.65,429.09,8.67,,,,,,15624
+15841,62,13,6.79,8.19,56.5,20.97,,,,,,15841
+15919,941,141,1.12,4.44,536.09,14.98,,,,,,15919
+15991,62,7,-2.35,-3.73,206.0,11.29,,,,,,15991
+16218,177,17,2.0,0.05,160.0,9.6,,,,,,16218
+ABE,2274,401,6.12,8.7,597.46,17.63,Lehigh Valley International Airport,Allentown,PA,40.65236,-75.4404,Lehigh Valley International Airport
+ABI,2329,358,3.13,5.55,158.0,15.37,Abilene Regional Airport,Abilene,TX,32.41132,-99.6819,Abilene Regional Airport
+ABQ,19192,3417,4.7,8.78,706.95,17.8,Albuquerque International Sunport,Albuquerque,NM,35.04022,-106.60919,Albuquerque International Sunport
+ABR,671,122,9.79,9.98,257.0,18.18,Aberdeen Regional Airport,Aberdeen,SD,45.44906,-98.42183,Aberdeen Regional Airport
+ABY,876,158,7.5,8.79,145.0,18.04,Southwest Georgia Regional Airport,Albany,GA,31.53552,-84.19447,Southwest Georgia Regional Airport
+ACK,492,96,9.34,16.19,190.26,19.51,Nantucket Memorial Airport,Nantucket,MA,41.25305,-70.06018,Nantucket Memorial Airport
+ACT,1612,266,4.44,7.29,89.0,16.5,Waco Regional Airport,Waco,TX,31.61129,-97.23052,Waco Regional Airport
+ACV,1320,290,7.53,11.56,250.0,21.97,Arcata Airport,Arcata/Eureka,CA,40.97812,-124.10862,Arcata Airport
+ACY,3572,785,8.62,9.84,813.26,21.98,Atlantic City International Airport,Atlantic City,NJ,39.45758,-74.57717,Atlantic City International Airport
+ADK,96,37,10.11,9.89,1192.0,38.54,Adak Airport,Adak,AK,51.87796,-176.64603,Adak Airport
+ADQ,460,57,1.8,0.38,253.0,12.39,Kodiak Airport,Kodiak,AK,57.74997,-152.49386,Kodiak Airport
+AEX,3146,603,8.68,8.88,341.3,19.17,Alexandria International Airport,Alexandria,LA,31.32737,-92.54856,Alexandria International Airport
+AGS,2361,470,8.4,8.44,143.23,19.91,Augusta Regional Airport (Bush Field),Augusta,GA,33.36996,-81.9645,Augusta Regional Airport (Bush Field)
+AKN,63,14,4.35,2.68,288.0,22.22,King Salmon Airport,King Salmon,AK,58.6768,-156.64922,King Salmon Airport
+ALB,7459,1009,-1.83,6.71,743.19,13.53,Albany International Airport,Albany,NY,42.74812,-73.80298,Albany International Airport
+ALO,617,101,1.09,5.28,234.0,16.37,Waterloo Regional Airport,Waterloo,IA,42.55708,-92.40034,Waterloo Regional Airport
+AMA,4214,744,6.2,6.95,400.54,17.66,Rick Husband Amarillo International Airport,Amarillo,TX,35.21937,-101.70593,Rick Husband Amarillo International Airport
+ANC,16005,1988,-0.38,3.39,1397.85,12.42,Ted Stevens Anchorage International Airport,Anchorage,AK,61.17432,-149.99619,Ted Stevens Anchorage International Airport
+APN,573,74,1.69,4.73,198.0,12.91,Alpena County Regional Airport,Alpena,MI,45.07807,-83.56029,Alpena County Regional Airport
+ASE,3562,968,14.19,16.24,637.57,27.18,Aspen-Pitkin County Airport,Aspen,CO,39.22316,-106.86885,Aspen-Pitkin County Airport
+ATL,346836,56462,3.02,9.27,639.99,16.28,Hartsfield-Jackson Atlanta International Airport,Atlanta,GA,33.64044,-84.42694,Hartsfield-Jackson Atlanta International Airport
+ATW,2848,525,5.48,5.51,285.05,18.43,Appleton International Airport,Appleton,WI,44.25741,-88.51948,Appleton International Airport
+AUS,42067,7153,4.93,10.08,821.95,17.0,Austin-Bergstrom International Airport,Austin,TX,30.19453,-97.66987,Austin-Bergstrom International Airport
+AVL,2745,455,5.93,9.06,287.46,16.58,Asheville Regional Airport,Asheville,NC,35.43619,-82.54181,Asheville Regional Airport
+AVP,1359,240,6.35,8.78,550.08,17.66,Wilkes-Barre/Scranton International Airport,Wilkes-Barre/Scranton,PA,41.33815,-75.72427,Wilkes-Barre/Scranton International Airport
+AZO,1845,295,0.69,3.36,143.77,15.99,Kalamazoo/Battle Creek International Airport,Kalamazoo,MI,42.23488,-85.55206,Kalamazoo/Battle Creek International Airport
+BDL,18799,2909,0.74,7.46,839.84,15.47,Bradley International Airport,Windsor Locks,CT,41.93887,-72.68323,Bradley International Airport
+BET,896,124,3.68,1.76,399.0,13.84,Bethel Airport,Bethel,AK,60.77978,-161.838,Bethel Airport
+BFL,2637,402,3.44,5.74,662.49,15.24,Meadows Field,Bakersfield,CA,35.4336,-119.05677,Meadows Field
+BGM,262,40,5.83,10.49,378.0,15.27,Greater Binghamton Airport,Binghamton,NY,42.20848,-75.97961,Greater Binghamton Airport
+BGR,366,46,2.19,5.84,696.13,12.57,Bangor International Airport,Bangor,ME,44.80744,-68.82814,Bangor International Airport
+BHM,12514,2128,4.42,8.91,514.99,17.0,Birmingham-Shuttlesworth International Airport,Birmingham,AL,33.56294,-86.75355,Birmingham-Shuttlesworth International Airport
+BIL,2866,295,-2.29,1.49,506.14,10.29,Billings Logan International Airport,Billings,MT,45.80766,-108.54286,Billings Logan International Airport
+BIS,3453,589,4.89,6.97,523.16,17.06,Bismarck Municipal Airport,Bismarck,ND,46.77411,-100.74672,Bismarck Municipal Airport
+BJI,667,75,1.03,5.41,199.0,11.24,Bemidji Regional Airport,Bemidji,MN,47.50942,-94.93372,Bemidji Regional Airport
+BLI,711,72,-1.4,-0.06,1255.03,10.13,Bellingham International Airport,Bellingham,WA,48.79275,-122.53753,Bellingham International Airport
+BMI,2730,494,5.74,6.46,414.5,18.1,Central Illinois Regional Airport at Bloomington-Normal,Bloomington,IL,40.47799,-88.91595,Central Illinois Regional Airport at Bloomington-Normal
+BNA,47580,8427,4.46,9.57,658.6,17.71,Nashville International Airport,Nashville,TN,36.12448,-86.67818,Nashville International Airport
+BOI,11655,1937,5.83,8.58,635.1,16.62,Boise Airport (Boise Air Terminal),Boise,ID,43.56444,-116.22278,Boise Airport (Boise Air Terminal)
+BOS,107847,21363,4.17,9.38,977.31,19.81,Gen. Edward Lawrence Logan International Airport,Boston,MA,42.36435,-71.00518,Gen. Edward Lawrence Logan International Airport
+BPT,973,235,15.03,15.94,270.0,24.15,Jack Brooks Regional Airport (Southeast Texas Regional),Beaumont/Port Arthur,TX,29.95083,-94.02069,Jack Brooks Regional Airport (Southeast Texas Regional)
+BQK,878,150,4.79,8.2,238.0,17.08,Brunswick Golden Isles Airport,Brunswick,GA,31.25903,-81.46631,Brunswick Golden Isles Airport
+BQN,1343,265,4.34,12.27,1358.66,19.73,Rafael Hernández Airport,Aguadilla,PR,18.49486,-67.12944,Rafael Hernández Airport
+BRD,589,99,-1.25,-0.06,114.13,16.81,Brainerd Lakes Regional Airport,Brainerd,MN,46.39786,-94.13723,Brainerd Lakes Regional Airport
+BRO,2362,310,2.21,4.84,386.01,13.12,Brownsville/South Padre Island International Airport,Brownsville,TX,25.90683,-97.42586,Brownsville/South Padre Island International Airport
+BRW,855,129,1.85,1.59,523.11,15.09,Wiley Post-Will Rogers Memorial Airport,Barrow,AK,71.28545,-156.766,Wiley Post-Will Rogers Memorial Airport
+BTM,667,42,-5.91,0.66,358.0,6.3,Bert Mooney Airport,Butte,MT,45.9548,-112.49746,Bert Mooney Airport
+BTR,7166,1557,10.92,10.77,363.75,21.73,Baton Rouge Metropolitan Airport,Baton Rouge,LA,30.53316,-91.14963,Baton Rouge Metropolitan Airport
+BTV,2978,610,5.72,9.41,473.89,20.48,Burlington International Airport,Burlington,VT,44.473,-73.15031,Burlington International Airport
+BUF,16824,2530,0.29,7.02,602.9,15.04,Buffalo Niagara International Airport,Buffalo,NY,42.94052,-78.73217,Buffalo Niagara International Airport
+BUR,18889,2693,3.08,5.93,454.51,14.26,Bob Hope Airport (Hollywood Burbank Airport),Burbank,CA,34.20062,-118.3585,Bob Hope Airport (Hollywood Burbank Airport)
+BWI,86079,19049,7.1,13.11,766.27,22.13,Baltimore-Washington International Airport,Baltimore,MD,39.1754,-76.6682,Baltimore-Washington International Airport
+BZN,3604,496,1.76,5.9,672.89,13.76,Bozeman Yellowstone International Airport (Gallatin Field Airport),Bozeman,MT,45.7769,-111.15301,Bozeman Yellowstone International Airport (Gallatin Field Airport)
+CAE,5151,959,7.51,10.1,464.96,18.62,Columbia Metropolitan Airport,Columbia,SC,33.93884,-81.11954,Columbia Metropolitan Airport
+CAK,6100,829,-0.06,6.06,562.99,13.59,Akron-Canton Regional Airport,Akron,OH,40.91631,-81.44247,Akron-Canton Regional Airport
+CDC,573,63,1.0,3.16,221.0,10.99,Cedar City Regional Airport,Cedar City,UT,37.70097,-113.09858,Cedar City Regional Airport
+CDV,662,101,-1.58,-3.22,186.5,15.26,Merle K. (Mudhole) Smith Airport,Cordova,AK,60.49183,-145.47765,Merle K. (Mudhole) Smith Airport
+CEC,190,42,8.73,15.95,304.0,22.11,Del Norte County Airport (Jack McNamara Field),Crescent City,CA,41.78016,-124.23653,Del Norte County Airport (Jack McNamara Field)
+CHA,4202,753,5.62,7.96,276.15,17.92,Chattanooga Metropolitan Airport (Lovell Field),Chattanooga,TN,35.03527,-85.20379,Chattanooga Metropolitan Airport (Lovell Field)
+CHO,2204,422,8.87,12.24,472.98,19.15,Charlottesville-Albemarle Airport,Charlottesville,VA,38.13864,-78.45286,Charlottesville-Albemarle Airport
+CHS,11817,1929,3.77,8.36,549.81,16.32,Charleston International Airport/Charleston AFB,Charleston,SC,32.89865,-80.04051,Charleston International Airport/Charleston AFB
+CID,6832,1402,8.4,9.51,419.23,20.52,The Eastern Iowa Airport,Cedar Rapids,IA,41.88459,-91.71087,The Eastern Iowa Airport
+CIU,613,99,8.43,10.47,284.0,16.15,Chippewa County International Airport,Sault Ste. Marie,MI,46.25075,-84.47239,Chippewa County International Airport
+CLD,641,101,5.13,5.24,86.0,15.76,McClellan-Palomar Airport,San Diego,CA,33.12723,-117.27873,McClellan-Palomar Airport
+CLE,34589,5790,2.96,8.32,697.54,16.74,Cleveland Hopkins International Airport,Cleveland,OH,41.41089,-81.8494,Cleveland Hopkins International Airport
+CLL,2311,286,2.67,2.74,136.47,12.38,Easterwood Airport,College Station,TX,30.58859,-96.36382,Easterwood Airport
+CLT,100324,20623,5.78,8.35,728.91,20.56,Charlotte Douglas International Airport,Charlotte,NC,35.21401,-80.94313,Charlotte Douglas International Airport
+CMH,24187,4282,3.49,9.44,678.99,17.7,Port Columbus International Airport,Columbus,OH,39.99799,-82.89188,Port Columbus International Airport
+CMI,2116,361,3.98,7.3,222.44,17.06,University of Illinois - Willard Airport,Champaign/Urbana,IL,40.03925,-88.27806,University of Illinois - Willard Airport
+CMX,668,90,5.35,6.18,359.18,13.47,Houghton County Memorial Airport,Hancock,MI,47.16842,-88.48906,Houghton County Memorial Airport
+CNY,206,4,-20.58,-6.03,184.0,1.94,Canyonlands Field,Moab,UT,38.75496,-109.75484,Canyonlands Field
+COD,665,150,8.12,7.05,352.74,22.56,Yellowstone Regional Airport,Cody,WY,44.52019,-109.0238,Yellowstone Regional Airport
+COS,6881,1250,7.27,9.06,562.47,18.17,City of Colorado Springs Municipal Airport,Colorado Springs,CO,38.80581,-104.70025,City of Colorado Springs Municipal Airport
+COU,1308,272,11.14,14.07,402.8,20.8,Columbia Regional Airport,Columbia,MO,38.81809,-92.21963,Columbia Regional Airport
+CPR,1774,202,-4.57,0.98,271.5,11.39,Natrona County International Airport,Casper,WY,42.90836,-106.46447,Natrona County International Airport
+CRP,4888,867,6.36,7.71,244.4,17.74,Corpus Christi International Airport,Corpus Christi,TX,27.77036,-97.50122,Corpus Christi International Airport
+CRW,2385,530,10.34,11.24,483.91,22.22,Yeager Airport,Charleston,WV,38.37315,-81.59319,Yeager Airport
+CSG,1068,176,4.35,5.53,83.0,16.48,Columbus Metropolitan Airport,Columbus,GA,32.51633,-84.93886,Columbus Metropolitan Airport
+CVG,20031,3790,5.73,9.22,689.86,18.92,Cincinnati/Northern Kentucky International Airport,Covington,KY,39.04614,-84.66217,Cincinnati/Northern Kentucky International Airport
+CWA,1420,227,4.09,5.51,211.43,15.99,Central Wisconsin Airport,Mosinee,WI,44.77762,-89.66678,Central Wisconsin Airport
+DAB,1494,163,-0.54,5.32,366.17,10.91,Daytona Beach International Airport,Daytona Beach,FL,29.17992,-81.05806,Daytona Beach International Airport
+DAL,59699,13176,7.85,11.85,671.39,22.07,Dallas Love Field,Dallas,TX,32.84711,-96.85177,Dallas Love Field
+DAY,8676,1527,3.89,7.29,482.05,17.6,James M. Cox Dayton International Airport,Dayton,OH,39.90238,-84.21938,James M. Cox Dayton International Airport
+DBQ,928,144,1.79,4.53,147.0,15.52,Dubuque Regional Airport,Dubuque,IA,42.40296,-90.70917,Dubuque Regional Airport
+DCA,73794,13081,3.02,7.82,766.71,17.73,Ronald Reagan Washington National Airport,Arlington,VA,38.85208,-77.03772,Ronald Reagan Washington National Airport
+DEN,196055,43331,7.09,11.72,875.92,22.1,Denver International Airport,Denver,CO,39.85841,-104.667,Denver International Airport
+DFW,239551,50478,6.72,11.25,784.25,21.07,Dallas/Fort Worth International Airport,Dallas-Fort Worth,TX,32.89595,-97.0372,Dallas/Fort Worth International Airport
+DHN,1260,279,9.15,7.66,170.0,22.14,Dothan Regional Airport,Dothan,AL,31.32134,-85.44963,Dothan Regional Airport
+DIK,938,98,-4.51,1.19,483.54,10.45,Dickinson Theodore Roosevelt Regional Airport,Dickinson,ND,46.79739,-102.80195,Dickinson Theodore Roosevelt Regional Airport
+DLG,77,7,-7.87,0.56,329.0,9.09,Dillingham Airport,Dillingham,AK,59.04541,-158.50334,Dillingham Airport
+DLH,1719,352,9.72,8.15,306.04,20.48,Duluth International Airport,Duluth,MN,46.84209,-92.19365,Duluth International Airport
+DRO,2068,366,5.96,6.43,448.16,17.7,Durango-La Plata County Airport,Durango,CO,37.15152,-107.75377,Durango-La Plata County Airport
+DSM,8385,1598,6.64,10.15,535.38,19.06,Des Moines International Airport,Des Moines,IA,41.53493,-93.66068,Des Moines International Airport
+DTW,108500,18956,3.54,9.05,701.96,17.47,Detroit Metropolitan Airport,Detroit,MI,42.21206,-83.34884,Detroit Metropolitan Airport
+DVL,525,57,2.8,5.48,336.71,10.86,Devils Lake Regional Airport,Devils Lake,ND,48.11425,-98.90878,Devils Lake Regional Airport
+EAU,668,111,5.64,8.82,268.18,16.62,Chippewa Valley Regional Airport,Eau Claire,WI,44.86526,-91.48507,Chippewa Valley Regional Airport
+ECP,4169,519,0.38,5.84,404.18,12.45,Northwest Florida Beaches International Airport,Panama City,FL,,,Northwest Florida Beaches International Airport
+EGE,1241,282,11.97,15.29,1105.18,22.72,Eagle County Regional Airport,Eagle,CO,39.64257,-106.9177,Eagle County Regional Airport
+EKO,531,41,-3.19,-3.67,200.0,7.72,Elko Regional Airport,Elko,NV,40.82493,-115.7917,Elko Regional Airport
+ELM,2051,370,5.44,6.27,403.95,18.04,Elmira/Corning Regional Airport,Elmira,NY,42.15991,-76.89144,Elmira/Corning Regional Airport
+ELP,11972,1930,4.93,7.88,638.12,16.12,El Paso International Airport,El Paso,TX,31.80667,-106.37781,El Paso International Airport
+ERI,746,134,8.38,7.5,364.12,17.96,Erie International Airport,Erie,PA,42.08202,-80.17622,Erie International Airport
+ESC,573,52,2.28,7.01,306.0,9.08,Delta County Airport,Escanaba,MI,45.72267,-87.09373,Delta County Airport
+EUG,3632,565,3.45,7.05,616.3,15.56,Eugene Airport (Mahlon Sweet Field),Eugene,OR,44.12326,-123.21869,Eugene Airport (Mahlon Sweet Field)
+EVV,3834,742,6.11,7.44,344.81,19.35,Evansville Regional Airport,Evansville,IN,38.03799,-87.53063,Evansville Regional Airport
+EWN,575,85,5.43,5.33,433.0,14.78,Coastal Carolina Regional Airport (Craven County Regional),New Bern,NC,35.07297,-77.04294,Coastal Carolina Regional Airport (Craven County Regional)
+EWR,101772,21163,4.33,13.23,1087.91,20.79,Newark Liberty International Airport,Newark,NJ,40.6925,-74.16866,Newark Liberty International Airport
+EYW,1973,251,2.75,6.64,501.31,12.72,Key West International Airport,Key West,FL,24.55611,-81.75956,Key West International Airport
+FAI,2183,287,0.7,3.4,1239.78,13.15,Fairbanks International Airport,Fairbanks,AK,64.81368,-147.85967,Fairbanks International Airport
+FAR,5693,1026,4.32,6.97,514.84,18.02,Hector International Airport,Fargo,ND,46.91935,-96.81499,Hector International Airport
+FAT,7018,1384,8.71,9.93,520.28,19.72,Fresno Yosemite International Airport,Fresno,CA,36.77619,-119.71814,Fresno Yosemite International Airport
+FAY,1633,267,6.29,9.49,331.0,16.35,Fayetteville Regional Airport,Fayetteville,NC,34.99147,-78.88,Fayetteville Regional Airport
+FCA,2025,224,-2.32,1.83,734.99,11.06,Glacier Park International Airport,Kalispell,MT,48.3114,-114.25507,Glacier Park International Airport
+FLG,1660,247,5.44,3.97,119.0,14.88,Flagstaff Pulliam Airport,Flagstaff,AZ,35.13845,-111.67122,Flagstaff Pulliam Airport
+FLL,73624,13712,3.56,10.6,1052.01,18.62,Fort Lauderdale-Hollywood International Airport,Ft. Lauderdale,FL,26.07258,-80.15275,Fort Lauderdale-Hollywood International Airport
+FNT,4746,574,-1.85,4.35,570.12,12.09,Bishop International Airport,Flint,MI,42.9655,-83.74346,Bishop International Airport
+FSD,5331,1141,8.96,9.3,451.77,21.4,Sioux Falls Regional Airport,Sioux Falls,SD,43.58135,-96.7417,Sioux Falls Regional Airport
+FSM,1971,340,6.65,6.73,347.01,17.25,Fort Smith Regional Airport,Fort Smith,AR,35.33659,-94.36744,Fort Smith Regional Airport
+FWA,5261,947,6.98,9.29,329.24,18.0,Fort Wayne International Airport,Fort Wayne,IN,40.97847,-85.19515,Fort Wayne International Airport
+GCC,997,98,-4.99,1.47,343.85,9.83,Gillette-Campbell County Airport,Gillette,WY,44.3489,-105.53936,Gillette-Campbell County Airport
+GCK,663,122,5.58,5.9,404.0,18.4,Garden City Regional Airport,Garden City,KS,37.92752,-100.72441,Garden City Regional Airport
+GEG,9505,1324,2.78,4.94,603.34,13.93,Spokane International Airport,Spokane,WA,47.61986,-117.53384,Spokane International Airport
+GFK,717,129,4.4,3.03,284.0,17.99,Grand Forks International Airport,Grand Forks,ND,47.94926,-97.17611,Grand Forks International Airport
+GGG,643,129,8.83,7.78,140.0,20.06,East Texas Regional Airport,Longview,TX,32.38486,-94.71171,East Texas Regional Airport
+GJT,3179,379,1.18,2.57,496.1,11.92,Grand Junction Regional Airport (Walker Field),Grand Junction,CO,39.12241,-108.52673,Grand Junction Regional Airport (Walker Field)
+GNV,2683,517,8.02,8.63,298.67,19.27,Gainesville Regional Airport,Gainesville,FL,29.69006,-82.27178,Gainesville Regional Airport
+GPT,3605,502,1.5,4.65,398.71,13.93,Gulfport-Biloxi International Airport,Gulfport-Biloxi,MS,30.40728,-89.07009,Gulfport-Biloxi International Airport
+GRB,4881,784,3.7,4.4,254.78,16.06,Green Bay-Austin Straubel International Airport,Green Bay,WI,44.48507,-88.12959,Green Bay-Austin Straubel International Airport
+GRI,634,97,0.67,4.76,561.0,15.3,Central Nebraska Regional Airport,Grand Island,NE,40.96747,-98.30861,Central Nebraska Regional Airport
+GRK,4033,647,5.6,6.01,239.39,16.04,Killeen-Fort Hood Regional Airport,Killeen,TX,31.0649,-97.8278,Killeen-Fort Hood Regional Airport
+GRR,10845,1683,1.9,7.46,476.57,15.52,Gerald R. Ford International Airport,Grand Rapids,MI,42.88082,-85.52277,Gerald R. Ford International Airport
+GSO,6737,1251,5.86,9.61,461.7,18.57,Piedmont Triad International Airport,Greensboro,NC,36.09775,-79.9373,Piedmont Triad International Airport
+GSP,6542,999,3.04,7.05,459.97,15.27,Greenville-Spartanburg International Airport,Greer,SC,34.89567,-82.21886,Greenville-Spartanburg International Airport
+GST,77,34,21.48,16.95,41.0,44.16,Gustavus Airport,Gustavus,AK,58.42438,-135.70738,Gustavus Airport
+GTF,1966,180,-0.97,0.97,592.16,9.16,Great Falls International Airport,Great Falls,MT,47.482,-111.37069,Great Falls International Airport
+GTR,927,180,7.79,7.31,241.0,19.42,Golden Triangle Regional Airport,Columbus-Starkville-West Point,MS,33.45033,-88.59137,Golden Triangle Regional Airport
+GUC,497,109,8.19,9.78,425.51,21.93,Gunnison-Crested Butte Regional Airport,Gunnison,CO,38.53396,-106.93318,Gunnison-Crested Butte Regional Airport
+GUM,334,58,4.8,16.55,3801.0,17.37,Guam International Airport,Agana,GU,13.48345,-144.79598,Guam International Airport
+HDN,703,157,8.36,11.07,878.46,22.33,Yampa Valley Airport (Yampa Valley Regional),Hayden,CO,40.48118,-107.21766,Yampa Valley Airport (Yampa Valley Regional)
+HIB,898,111,-2.35,1.26,141.76,12.36,Range Regional Airport (Chisholm-Hibbing Airport),Hibbing,MN,47.3866,-92.83899,Range Regional Airport (Chisholm-Hibbing Airport)
+HLN,1435,136,-2.29,0.84,528.72,9.48,Helena Regional Airport,Helena,MT,46.60682,-111.98275,Helena Regional Airport
+HNL,43172,4639,0.79,2.69,1271.84,10.75,Honolulu International Airport,Honolulu,HI,21.31869,-157.92241,Honolulu International Airport
+HOB,571,69,3.11,5.12,501.0,12.08,Lea County Regional Airport,Hobbs,NM,32.68753,-103.21703,Lea County Regional Airport
+HOU,52042,11138,7.47,11.96,711.88,21.4,William P. Hobby Airport,Houston,TX,29.64542,-95.27889,William P. Hobby Airport
+HPN,7443,1764,9.16,11.87,889.04,23.7,Westchester County Airport,White Plains,NY,41.06696,-73.70757,Westchester County Airport
+HRL,3079,351,1.2,3.4,283.59,11.4,Valley International Airport,Harlingen,TX,26.22851,-97.65439,Valley International Airport
+HSV,4519,692,3.32,7.53,358.67,15.31,Huntsville International Airport,Huntsville,AL,34.64045,-86.77311,Huntsville International Airport
+HYA,83,16,8.52,22.9,196.0,19.28,Barnstable Municipal Airport,Hyannis,MA,41.66934,-70.28036,Barnstable Municipal Airport
+HYS,573,104,3.11,2.5,298.0,18.15,Hays Regional Airport,Hays,KS,38.84494,-99.27403,Hays Regional Airport
+IAD,34305,7011,5.07,12.59,1293.52,20.44,Washington Dulles International Airport,Chantilly,VA,38.94453,-77.45581,Washington Dulles International Airport
+IAG,322,71,3.75,5.24,986.51,22.05,Niagara Falls International Airport,Niagara Falls,NY,43.10726,-78.94538,Niagara Falls International Airport
+IAH,146622,30690,7.25,11.42,824.62,20.93,George Bush Intercontinental Airport,Houston,TX,29.98047,-95.33972,George Bush Intercontinental Airport
+ICT,8096,1540,6.75,9.63,559.37,19.02,Wichita Dwight D. Eisenhower National Airport (Wichita Mid-Continent Airport),Wichita,KS,37.64996,-97.43305,Wichita Dwight D. Eisenhower National Airport (Wichita Mid-Continent Airport)
+IDA,2247,239,-2.67,0.68,303.1,10.64,Idaho Falls Regional Airport,Idaho Falls,ID,43.51456,-112.07017,Idaho Falls Regional Airport
+ILG,100,37,22.86,28.51,860.72,37.0,Wilmington Airport,Wilmington,DE,39.67872,-75.60653,Wilmington Airport
+ILM,1860,267,3.92,5.92,366.13,14.35,Wilmington International Airport,Wilmington,NC,34.27061,-77.90256,Wilmington International Airport
+IMT,620,70,-0.68,2.54,169.35,11.29,Ford Airport,Iron Mountain/Kingsford,MI,45.81835,-88.11454,Ford Airport
+IND,25558,4080,2.22,8.06,723.19,15.96,Indianapolis International Airport,Indianapolis,IN,39.71733,-86.29438,Indianapolis International Airport
+INL,574,72,5.24,5.25,157.78,12.54,Falls International Airport,International Falls,MN,48.56619,-93.40307,Falls International Airport
+ISN,2542,377,0.83,4.23,658.67,14.83,Sloulin Field International Airport,Williston,ND,48.17794,-103.64235,Sloulin Field International Airport
+ISP,4392,723,2.04,9.88,742.09,16.46,Long Island MacArthur Airport,Islip,NY,40.79524,-73.10021,Long Island MacArthur Airport
+ITH,34,5,6.97,12.91,353.0,14.71,Ithaca Tompkins Regional Airport,Ithaca,NY,42.49103,-76.45844,Ithaca Tompkins Regional Airport
+ITO,5723,484,0.34,-0.86,306.75,8.46,Hilo International Airport,Hilo,HI,19.72026,-155.04847,Hilo International Airport
+JAC,3511,567,2.47,7.79,622.47,16.15,Jackson Hole Airport,Jackson,WY,43.60732,-110.73774,Jackson Hole Airport
+JAN,7097,1239,4.37,6.92,392.18,17.46,Jackson-Evers International Airport,Jackson,MS,32.31117,-90.07589,Jackson-Evers International Airport
+JAX,18038,2892,3.67,8.46,582.54,16.03,Jacksonville International Airport,Jacksonville,FL,30.49406,-81.68786,Jacksonville International Airport
+JFK,93811,20260,3.52,11.89,1441.86,21.6,John F. Kennedy International Airport (New York International Airport),New York,NY,40.63975,-73.77893,John F. Kennedy International Airport (New York International Airport)
+JLN,666,136,8.98,9.68,327.0,20.42,Joplin Regional Airport,Joplin,MO,37.15181,-94.49827,Joplin Regional Airport
+JMS,812,131,3.08,3.71,255.59,16.13,Jamestown Regional Airport,Jamestown,ND,46.92972,-98.6782,Jamestown Regional Airport
+JNU,4094,731,5.43,4.3,481.06,17.86,Juneau International Airport,Juneau,AK,58.35496,-134.57628,Juneau International Airport
+KOA,11114,1165,-0.24,1.44,995.15,10.48,Kona International Airport at Keahole,Kailua/Kona,HI,19.73877,-156.04563,Kona International Airport at Keahole
+KTN,2319,410,3.16,2.55,458.57,17.68,Ketchikan International Airport,Ketchikan,AK,55.35557,-131.71374,Ketchikan International Airport
+LAN,1849,337,6.15,6.96,234.76,18.23,Capital Region International Airport ( Lansing Capital City),Lansing,MI,42.7787,-84.58736,Capital Region International Airport ( Lansing Capital City)
+LAR,581,70,-3.82,2.96,113.0,12.05,Laramie Regional Airport,Laramie,WY,41.31205,-105.67499,Laramie Regional Airport
+LAS,133181,27225,5.97,10.88,997.72,20.44,McCarran International Airport,Las Vegas,NV,36.08036,-115.15233,McCarran International Airport
+LAW,1331,222,6.72,6.82,140.0,16.68,Lawton-Fort Sill Regional Airport,Lawton,OK,34.56771,-98.41664,Lawton-Fort Sill Regional Airport
+LAX,194673,40281,5.64,10.56,1249.48,20.69,Los Angeles International Airport,Los Angeles,CA,33.94254,-118.40807,Los Angeles International Airport
+LBB,4637,737,6.05,7.34,389.29,15.89,Lubbock Preston Smith International Airport,Lubbock,TX,33.66364,-101.82278,Lubbock Preston Smith International Airport
+LBE,1281,299,7.36,9.67,923.46,23.34,Arnold Palmer Regional Airport,Latrobe,PA,40.27594,-79.4048,Arnold Palmer Regional Airport
+LCH,1860,248,0.94,2.85,197.63,13.33,Lake Charles Regional Airport,Lake Charles,LA,30.1261,-93.2234,Lake Charles Regional Airport
+LEX,5979,925,2.66,6.84,404.57,15.47,Blue Grass Airport,Lexington,KY,38.03697,-84.60539,Blue Grass Airport
+LFT,5149,983,7.39,7.69,342.83,19.09,Lafayette Regional Airport,Lafayette,LA,30.20528,-91.98766,Lafayette Regional Airport
+LGA,99605,22709,5.36,12.65,796.33,22.8,LaGuardia Airport (Marine Air Terminal),New York,NY,40.77724,-73.87261,LaGuardia Airport (Marine Air Terminal)
+LGB,8777,1563,4.04,7.1,781.47,17.81,Long Beach Airport (Daugherty Field),Long Beach,CA,33.81772,-118.15161,Long Beach Airport (Daugherty Field)
+LIH,10545,1018,-1.0,0.55,925.58,9.65,Lihue Airport,Lihue,HI,21.97598,-159.33896,Lihue Airport
+LIT,10422,1946,5.75,9.34,520.27,18.67,Bill and Hillary Clinton National Airport (Adams Field),Little Rock,AR,34.7294,-92.22425,Bill and Hillary Clinton National Airport (Adams Field)
+LNK,2636,411,4.63,5.66,480.19,15.59,Lincoln Airport (Lincoln Municipal),Lincoln,NE,40.85097,-96.75925,Lincoln Airport (Lincoln Municipal)
+LRD,2202,289,2.83,3.96,356.19,13.12,Laredo International Airport,Laredo,TX,27.54374,-99.46154,Laredo International Airport
+LSE,1645,258,1.49,4.96,186.29,15.68,La Crosse Regional Airport,La Crosse,WI,43.87938,-91.25654,La Crosse Regional Airport
+LWS,588,26,-6.62,-2.98,461.0,4.42,Lewiston-Nez Perce County Airport,Lewiston,ID,46.3745,-117.01539,Lewiston-Nez Perce County Airport
+MAF,7527,1264,5.53,6.83,436.46,16.79,Midland International Airport,Midland,TX,31.94253,-102.20191,Midland International Airport
+MBS,1721,284,4.69,7.52,202.64,16.5,MBS International Airport,Saginaw,MI,43.53291,-84.07965,MBS International Airport
+MCI,38665,6460,4.21,8.35,731.09,16.71,Kansas City International Airport,Kansas City,MO,39.29761,-94.71391,Kansas City International Airport
+MCO,110982,22349,6.87,11.93,952.9,20.14,Orlando International Airport,Orlando,FL,28.42889,-81.31603,Orlando International Airport
+MDT,3285,493,2.24,8.55,566.23,15.01,Harrisburg International Airport,Harrisburg,PA,40.1935,-76.7634,Harrisburg International Airport
+MDW,80886,17273,5.89,12.56,802.96,21.35,Chicago Midway International Airport,Chicago,IL,41.78598,-87.75242,Chicago Midway International Airport
+MEI,907,193,7.57,7.63,222.19,21.28,Meridian Regional Airport,Meridian,MS,32.33313,-88.75121,Meridian Regional Airport
+MEM,14770,2499,4.38,8.76,557.24,16.92,Memphis International Airport,Memphis,TN,35.04242,-89.97667,Memphis International Airport
+MFE,3411,483,4.22,6.82,381.22,14.16,McAllen-Miller International Airport (McAllen Miller International),McAllen,TX,26.17583,-98.23861,McAllen-Miller International Airport (McAllen Miller International)
+MFR,2476,419,4.37,7.38,528.52,16.92,Rogue Valley International Airport,Medford,OR,42.37423,-122.8735,Rogue Valley International Airport
+MGM,3171,635,7.33,8.27,292.15,20.03,Montgomery Regional Airport,Montgomery,AL,32.30064,-86.39398,Montgomery Regional Airport
+MHK,1634,268,2.84,3.84,458.8,16.4,Manhattan Regional Airport,Manhattan,KS,39.14097,-96.67083,Manhattan Regional Airport
+MHT,6292,899,-0.25,7.07,646.84,14.29,Manchester-Boston Regional Airport,Manchester,NH,42.93452,-71.43706,Manchester-Boston Regional Airport
+MIA,69341,15785,6.94,12.39,1060.14,22.76,Miami International Airport,Miami,FL,25.79325,-80.29056,Miami International Airport
+MKE,29825,4991,2.52,7.61,691.95,16.73,General Mitchell International Airport,Milwaukee,WI,42.94722,-87.89658,General Mitchell International Airport
+MKG,667,131,6.12,7.93,118.0,19.64,Muskegon County Airport,Muskegon,MI,43.16949,-86.23822,Muskegon County Airport
+MLB,1332,172,2.16,8.75,442.0,12.91,Melbourne International Airport,Melbourne,FL,28.10275,-80.64581,Melbourne International Airport
+MLI,3777,744,6.89,8.53,421.46,19.7,Quad City International Airport,Moline,IL,41.44853,-90.50754,Quad City International Airport
+MLU,2961,529,7.25,7.67,347.99,17.87,Monroe Regional Airport,Monroe,LA,32.51087,-92.03769,Monroe Regional Airport
+MMH,156,42,7.12,8.9,230.63,26.92,Mammoth Yosemite Airport,Mammoth Lakes,CA,37.62405,-118.83777,Mammoth Yosemite Airport
+MOB,5018,929,7.0,6.99,412.59,18.51,Mobile Regional Airport,Mobile,AL,30.69142,-88.24283,Mobile Regional Airport
+MOT,1850,275,2.83,4.85,534.46,14.86,Minot International Airport,Minot,ND,48.25938,-101.28033,Minot International Airport
+MQT,304,57,2.16,8.96,305.72,18.75,Sawyer International Airport,Marquette,MI,46.35364,-87.39536,Sawyer International Airport
+MRY,2974,493,5.92,7.06,284.19,16.58,Monterey Regional Airport (Monterey Peninsula Airport),Monterey,CA,36.58698,-121.84295,Monterey Regional Airport (Monterey Peninsula Airport)
+MSN,9135,1442,2.93,5.34,408.23,15.79,Dane County Regional Airport,Madison,WI,43.13986,-89.33751,Dane County Regional Airport
+MSO,2077,224,-1.3,1.77,639.03,10.78,Missoula International Airport,Missoula,MT,46.91631,-114.09056,Missoula International Airport
+MSP,112117,18171,1.95,7.21,809.68,16.21,Minneapolis-Saint Paul International Airport,Minneapolis,MN,44.88055,-93.21692,Minneapolis-Saint Paul International Airport
+MSY,38804,6473,3.72,8.62,735.68,16.68,Louis Armstrong New Orleans International Airport,New Orleans,LA,29.99339,-90.25803,Louis Armstrong New Orleans International Airport
+MTJ,1001,170,2.45,5.13,594.83,16.98,Montrose Regional Airport,Montrose,CO,38.50887,-107.89383,Montrose Regional Airport
+MVY,205,51,12.98,25.91,130.8,24.88,Martha's Vineyard Airport,Marthas Vineyard,MA,41.39303,-70.61433,Martha's Vineyard Airport
+MYR,4831,1047,7.43,9.49,501.52,21.67,Myrtle Beach International Airport,Myrtle Beach,SC,33.67975,-78.92833,Myrtle Beach International Airport
+OAJ,1136,199,9.22,10.14,399.0,17.52,Albert J. Ellis Airport,Jacksonville,NC,34.82916,-77.61214,Albert J. Ellis Airport
+OAK,42316,8582,6.55,9.41,712.02,20.28,Oakland International Airport,Oakland,CA,37.72129,-122.22072,Oakland International Airport
+OGG,20627,2711,1.06,3.58,1256.55,13.14,Kahului Airport,Kahului,HI,20.89865,-156.43046,Kahului Airport
+OKC,16144,2775,4.96,8.55,594.01,17.19,Will Rogers World Airport,Oklahoma City,OK,35.39309,-97.60073,Will Rogers World Airport
+OMA,16753,2761,3.65,7.7,651.3,16.48,Eppley Airfield,Omaha,NE,41.30252,-95.89417,Eppley Airfield
+OME,663,140,7.52,5.32,513.76,21.12,Nome Airport,Nome,AK,64.5122,-165.44525,Nome Airport
+ONT,17978,2991,4.09,8.29,549.78,16.64,Ontario International Airport,Ontario,CA,34.056,-117.60119,Ontario International Airport
+ORD,285884,66663,8.32,13.75,716.87,23.32,Chicago O'Hare International Airport,Chicago,IL,41.9796,-87.90446,Chicago O'Hare International Airport
+ORF,9374,1543,3.9,9.44,544.61,16.46,Norfolk International Airport,Norfolk,VA,36.89461,-76.20122,Norfolk International Airport
+ORH,663,121,0.91,5.32,1150.91,18.25,Worcester Regional Airport,Worcester,MA,42.26734,-71.87571,Worcester Regional Airport
+OTH,275,72,13.76,17.13,473.66,26.18,Southwest Oregon Regional Airport (North Bend Municipal),North Bend,OR,43.41714,-124.24603,Southwest Oregon Regional Airport (North Bend Municipal)
+OTZ,663,144,6.28,4.64,391.65,21.72,Ralph Wien Memorial Airport,Kotzebue,AK,66.88468,-162.59855,Ralph Wien Memorial Airport
+PAH,666,85,5.57,7.35,342.0,12.76,Barkley Regional Airport,Paducah,KY,37.06083,-88.77375,Barkley Regional Airport
+PBG,281,90,9.4,11.99,1239.08,32.03,Plattsburgh International Airport,Plattsburgh,NY,,,Plattsburgh International Airport
+PBI,22573,4818,7.78,12.11,916.43,21.34,Palm Beach International Airport,West Palm Beach,FL,26.68316,-80.09559,Palm Beach International Airport
+PDX,47085,6382,1.2,5.37,1091.13,13.55,Portland International Airport,Portland,OR,45.58872,-122.5975,Portland International Airport
+PHF,1263,239,8.68,10.99,510.43,18.92,Newport News/Williamsburg International Airport,Newport News,VA,37.1319,-76.49299,Newport News/Williamsburg International Airport
+PHL,66021,14173,4.31,10.29,1057.7,21.47,Philadelphia International Airport,Philadelphia,PA,39.87195,-75.24114,Philadelphia International Airport
+PHX,146815,27427,4.35,8.62,966.95,18.68,Phoenix Sky Harbor International Airport,Phoenix,AZ,33.43417,-112.00806,Phoenix Sky Harbor International Airport
+PIA,4664,885,5.96,7.73,378.22,18.98,General Wayne A. Downing Peoria International Airport,Peoria,IL,40.66424,-89.69331,General Wayne A. Downing Peoria International Airport
+PIB,573,104,8.57,7.5,232.92,18.15,Hattiesburg-Laurel Regional Airport,Hattiesburg-Laurel,MS,31.46715,-89.33706,Hattiesburg-Laurel Regional Airport
+PIH,654,59,2.57,-1.32,150.0,9.02,Pocatello Regional Airport,Pocatello,ID,42.91131,-112.59586,Pocatello Regional Airport
+PIT,24118,3439,-1.17,6.45,729.34,14.26,Pittsburgh International Airport,Pittsburgh,PA,40.49147,-80.23287,Pittsburgh International Airport
+PLN,753,100,7.36,10.39,242.74,13.28,Pellston Regional Airport of Emmet County,Pellston,MI,45.57093,-84.79672,Pellston Regional Airport of Emmet County
+PNS,6534,1033,3.51,7.41,440.02,15.81,Pensacola International Airport (Pensacola Gulf Coast Regional Airport),Pensacola,FL,30.47331,-87.18744,Pensacola International Airport (Pensacola Gulf Coast Regional Airport)
+PPG,107,31,21.3,15.1,2599.0,28.97,Pago Pago International Airport (Tafuna Airport),Pago Pago,AS,14.33102,-170.71053,Pago Pago International Airport (Tafuna Airport)
+PSC,2433,312,0.59,2.66,684.24,12.82,Tri-Cities Airport,Pasco,WA,46.26468,-119.11903,Tri-Cities Airport
+PSE,749,104,-4.34,2.69,1373.73,13.89,Mercedita Airport,Ponce,PR,18.0083,-66.56301,Mercedita Airport
+PSG,664,135,5.4,4.45,77.0,20.33,Petersburg James A. Johnson Airport,Petersburg,AK,56.80165,-132.94528,Petersburg James A. Johnson Airport
+PSP,8987,1568,5.93,7.94,636.59,17.45,Palm Springs International Airport,Palm Springs,CA,33.82922,-116.50625,Palm Springs International Airport
+PUB,264,41,2.13,1.81,109.0,15.53,Pueblo Memorial Airport,Pueblo,CO,38.28909,-104.49657,Pueblo Memorial Airport
+PVD,11058,1712,0.39,7.39,743.95,15.48,Theodore Francis Green State Airport,Providence,RI,41.724,-71.42822,Theodore Francis Green State Airport
+PWM,4681,782,3.25,9.09,532.63,16.71,Portland International Jetport,Portland,ME,43.64617,-70.30875,Portland International Jetport
+RAP,3265,523,3.37,5.38,557.13,16.02,Rapid City Regional Airport,Rapid City,SD,44.04532,-103.05737,Rapid City Regional Airport
+RDD,727,102,0.19,6.26,199.0,14.03,Redding Municipal Airport,Redding,CA,40.50898,-122.2934,Redding Municipal Airport
+RDM,2152,297,1.44,4.04,606.2,13.8,Redmond Municipal Airport (Roberts Field),Redmond,OR,44.25407,-121.14996,Redmond Municipal Airport (Roberts Field)
+RDU,31896,5716,4.46,9.56,639.14,17.92,Raleigh-Durham International Airport,Raleigh,NC,35.87764,-78.78747,Raleigh-Durham International Airport
+RHI,954,226,5.82,2.56,153.0,23.69,Rhinelander-Oneida County Airport,Rhinelander,WI,45.63119,-89.46745,Rhinelander-Oneida County Airport
+RIC,15355,2784,5.67,10.01,534.82,18.13,Richmond International Airport,Richmond,VA,37.50517,-77.31967,Richmond International Airport
+RKS,690,73,0.14,4.54,255.64,10.58,Rock Springs-Sweetwater County Airport,Rock Springs,WY,41.59422,-109.06519,Rock Springs-Sweetwater County Airport
+RNO,13011,2314,5.16,7.87,577.85,17.78,Reno/Tahoe International Airport,Reno,NV,39.49858,-119.76806,Reno/Tahoe International Airport
+ROA,2282,427,7.32,9.66,416.16,18.71,Roanoke Regional Airport (Woodrum Field),Roanoke,VA,37.32547,-79.97543,Roanoke Regional Airport (Woodrum Field)
+ROC,7448,1189,0.9,7.63,501.67,15.96,Greater Rochester International Airport,Rochester,NY,43.11887,-77.67238,Greater Rochester International Airport
+ROW,974,160,6.43,7.38,435.0,16.43,Roswell International Air Center,Roswell,NM,33.30156,-104.53056,Roswell International Air Center
+RST,2054,399,3.74,7.13,317.62,19.43,Rochester International Airport,Rochester,MN,43.90883,-92.49799,Rochester International Airport
+RSW,27350,4851,3.94,8.7,962.16,17.74,Southwest Florida International Airport,Ft. Myers,FL,26.53617,-81.75517,Southwest Florida International Airport
+SAF,1504,301,7.92,9.22,525.85,20.01,Santa Fe Municipal Airport,Santa Fe,NM,35.61678,-106.08814,Santa Fe Municipal Airport
+SAN,70207,12270,3.28,8.26,979.11,17.48,San Diego International Airport (Lindbergh Field),San Diego,CA,32.73356,-117.18966,San Diego International Airport (Lindbergh Field)
+SAT,29788,4458,2.15,7.52,715.3,14.97,San Antonio International Airport,San Antonio,TX,29.53369,-98.46978,San Antonio International Airport
+SAV,7542,1409,5.68,10.63,547.09,18.68,Savannah/Hilton Head International Airport,Savannah,GA,32.12758,-81.20214,Savannah/Hilton Head International Airport
+SBA,6017,1042,4.83,6.35,400.8,17.32,Santa Barbara Municipal Airport (Santa Barbara Airport),Santa Barbara,CA,34.42621,-119.84037,Santa Barbara Municipal Airport (Santa Barbara Airport)
+SBN,4454,807,8.68,10.93,308.97,18.12,South Bend International Airport (South Bend Regional),South Bend,IN,41.70895,-86.31847,South Bend International Airport (South Bend Regional)
+SBP,3133,580,4.45,6.81,248.1,18.51,San Luis Obispo County Regional Airport (McChesney Field),San Luis Obispo,CA,35.23706,-120.64239,San Luis Obispo County Regional Airport (McChesney Field)
+SCC,855,110,1.05,0.15,297.51,12.87,Deadhorse Airport (Prudhoe Bay Airport),Deadhorse,AK,70.19476,-148.46516,Deadhorse Airport (Prudhoe Bay Airport)
+SCE,911,159,5.91,8.41,479.24,17.45,University Park Airport,State College,PA,40.85121,-77.8463,University Park Airport
+SDF,10204,1709,3.16,8.67,544.57,16.75,Louisville International Airport (Standiford Field),Louisville,KY,38.17439,-85.736,Louisville International Airport (Standiford Field)
+SEA,110899,18554,2.96,6.77,1267.67,16.73,Seattle-Tacoma International Airport,Seattle,WA,47.44898,-122.30931,Seattle-Tacoma International Airport
+SFO,148008,29534,5.65,11.04,1197.72,19.95,San Francisco International Airport,San Francisco,CA,37.619,-122.37484,San Francisco International Airport
+SGF,6236,1256,9.21,10.35,460.76,20.14,Springfield-Branson National Airport,Springfield,MO,37.24433,-93.38686,Springfield-Branson National Airport
+SGU,1777,194,1.87,3.53,352.79,10.92,St. George Regional Airport,St George,UT,37.09058,-113.59306,St. George Regional Airport
+SHV,6099,1220,9.65,10.01,341.75,20.0,Shreveport Regional Airport,Shreveport,LA,32.44663,-93.8256,Shreveport Regional Airport
+SIT,1342,197,1.92,1.27,314.39,14.68,Sitka Rocky Gutierrez Airport,Sitka,AK,57.04714,-135.3616,Sitka Rocky Gutierrez Airport
+SJC,38200,6769,5.08,7.31,728.45,17.72,Norman Y. Mineta San José International Airport,San Jose,CA,37.36186,-121.92901,Norman Y. Mineta San José International Airport
+SJT,1628,289,4.67,7.11,229.0,17.75,San Angelo Regional Airport (Mathis Field),San Angelo,TX,31.35775,-100.49631,San Angelo Regional Airport (Mathis Field)
+SJU,24656,4308,2.49,10.08,1385.03,17.47,Luis Muñoz Marín International Airport,San Juan,PR,18.43942,-66.00183,Luis Muñoz Marín International Airport
+SLC,97210,13086,0.74,4.75,738.07,13.46,Salt Lake City International Airport,Salt Lake City,UT,40.78839,-111.97777,Salt Lake City International Airport
+SMF,37212,6562,5.39,7.97,689.21,17.63,Sacramento International Airport,Sacramento,CA,38.69542,-121.59077,Sacramento International Airport
+SMX,664,109,5.77,8.75,185.25,16.42,Santa Maria Public Airport (Capt G. Allan Hancock Field),Santa Maria,CA,34.89925,-120.45758,Santa Maria Public Airport (Capt G. Allan Hancock Field)
+SNA,37187,5438,1.63,6.48,797.81,14.62,John Wayne Airport (Orange County Airport),Santa Ana,CA,33.67566,-117.86822,John Wayne Airport (Orange County Airport)
+SPI,1587,270,7.66,9.24,343.24,17.01,Abraham Lincoln Capital Airport,Springfield,IL,39.84395,-89.67762,Abraham Lincoln Capital Airport
+SPS,1234,209,6.09,7.33,113.0,16.94,Wichita Falls Municipal Airport/Sheppard AFB,Wichita Falls,TX,33.9888,-98.49189,Wichita Falls Municipal Airport/Sheppard AFB
+SRQ,3370,534,4.45,9.79,709.71,15.85,Sarasota-Bradenton International Airport,Sarasota,FL,27.39533,-82.55411,Sarasota-Bradenton International Airport
+STC,83,24,18.14,17.57,394.0,28.92,St. Cloud Regional Airport,St Cloud,MN,45.54532,-94.05834,St. Cloud Regional Airport
+STL,46963,8673,4.29,9.46,716.32,18.47,St. Louis International Airport at Lambert Field,St Louis,MO,38.74769,-90.35999,St. Louis International Airport at Lambert Field
+STT,4348,794,3.92,11.47,1210.09,18.26,Cyril E. King Airport,Charlotte Amalie,VI,18.33731,-64.97336,Cyril E. King Airport
+STX,939,190,4.74,7.71,800.92,20.23,Henry E. Rohlsen Airport,Christiansted,VI,17.70189,-64.79856,Henry E. Rohlsen Airport
+SUN,956,119,1.32,3.95,326.82,12.45,Friedman Memorial Airport,Hailey,ID,43.50484,-114.29659,Friedman Memorial Airport
+SUX,620,117,6.61,9.23,436.0,18.87,Sioux Gateway Airport,Sioux City,IA,42.4026,-96.38437,Sioux Gateway Airport
+SWF,695,136,6.87,10.08,1034.84,19.57,Stewart International Airport,Newburgh,NY,41.50409,-74.10484,Stewart International Airport
+SYR,5608,910,0.47,6.16,543.58,16.23,Syracuse Hancock International Airport,Syracuse,NY,43.11119,-76.10631,Syracuse Hancock International Airport
+TLH,3194,497,3.8,7.21,359.51,15.56,Tallahassee International Airport,Tallahassee,FL,30.39653,-84.35033,Tallahassee International Airport
+TOL,962,142,-2.47,3.77,213.0,14.76,Toledo Express Airport,Toledo,OH,41.58681,-83.80783,Toledo Express Airport
+TPA,63906,11395,4.99,10.09,863.25,17.83,Tampa International Airport,Tampa,FL,27.97547,-82.53325,Tampa International Airport
+TRI,1928,313,4.02,5.77,227.0,16.23,Tri-Cities Regional Airport,Bristol,TN,36.47521,-82.40742,Tri-Cities Regional Airport
+TTN,2830,659,11.74,14.21,749.33,23.29,Trenton Mercer Airport,Trenton,NJ,40.27669,-74.81347,Trenton Mercer Airport
+TUL,13970,2398,4.17,7.57,506.97,17.17,Tulsa International Airport,Tulsa,OK,36.19837,-95.88824,Tulsa International Airport
+TUS,15117,2263,2.41,5.77,704.14,14.97,Tucson International Airport,Tucson,AZ,32.11608,-110.94103,Tucson International Airport
+TVC,2756,408,1.87,5.15,243.33,14.8,Cherry Capital Airport,Traverse City,MI,44.74144,-85.58224,Cherry Capital Airport
+TWF,815,85,-1.56,-0.89,175.0,10.43,Magic Valley Regional Airport (Joslin Field),Twin Falls,ID,42.4818,-114.48774,Magic Valley Regional Airport (Joslin Field)
+TXK,978,148,4.94,4.7,181.0,15.13,Texarkana Regional Airport (Webb Field),Texarkana,AR,33.45371,-93.99102,Texarkana Regional Airport (Webb Field)
+TYR,2300,399,6.36,6.68,120.25,17.35,Tyler Pounds Regional Airport,Tyler,TX,32.35414,-95.40239,Tyler Pounds Regional Airport
+TYS,6963,1454,7.94,10.47,533.83,20.88,McGhee Tyson Airport,Knoxville,TN,35.81249,-83.99286,McGhee Tyson Airport
+UST,155,38,8.34,15.21,798.23,24.52,Northeast Florida Regional Airport (St. Augustine Airport),St. Augustine,FL,,,Northeast Florida Regional Airport (St. Augustine Airport)
+VEL,206,7,-7.3,-3.63,132.0,3.4,Valdez Airport,Vernal,UT,40.4409,-109.50992,Valdez Airport
+VLD,935,150,7.01,7.25,208.0,16.04,Valdosta Regional Airport,Valdosta,GA,30.7825,-83.27672,Valdosta Regional Airport
+VPS,4868,812,5.54,9.47,442.74,16.68,Destin-Fort Walton Beach Airport/Eglin AFB,Valparaiso,FL,30.48325,-86.5254,Destin-Fort Walton Beach Airport/Eglin AFB
+WRG,664,114,4.56,3.04,56.5,17.17,Wrangell Airport,Wrangell,AK,56.48433,-132.36982,Wrangell Airport
+WYS,208,15,-1.87,1.38,273.0,7.21,Westerly State Airport,West Yellowstone,MT,44.6884,-111.11764,Westerly State Airport
+XNA,9283,2024,10.85,11.52,529.19,21.8,Northwest Arkansas Regional Airport,Fayetteville/Springdale/Rogers,AR,36.28187,-94.30681,Northwest Arkansas Regional Airport
+YAK,662,71,-5.53,-6.24,205.95,10.73,Yakutat Airport,Yakutat,AK,59.50336,-139.66023,Yakutat Airport
+YUM,1877,200,2.16,1.22,160.0,10.66,Yuma International Airport,Yuma,AZ,32.65658,-114.60597,Yuma International Airport

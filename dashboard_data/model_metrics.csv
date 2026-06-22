@@ -1,0 +1,4 @@
+modele,split,accuracy,precision_retard,recall_retard,f1_retard,roc_auc,balanced_accuracy
+Random Forest,test,0.65,0.242,0.426,0.308,0.601,0.563
+Random Forest,validation,0.651,0.169,0.451,0.246,0.596,0.565
+Logistic Regression,validation,0.669,0.169,0.413,0.24,0.592,0.559

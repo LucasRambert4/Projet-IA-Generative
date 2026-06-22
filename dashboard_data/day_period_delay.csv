@@ -1,0 +1,5 @@
+DAY_PERIOD,nb_vols,nb_retards,retard_moyen_arrivee,retard_moyen_depart,distance_moyenne,taux_retard_percent
+Apres-midi,1750748,350382,5.91,10.78,786.46,20.01
+Matin,2381083,299664,0.0,4.76,837.45,12.59
+Nuit,184269,38545,4.83,10.56,1205.05,20.92
+Soir,1502979,374848,9.27,14.34,793.34,24.94
