@@ -31,8 +31,6 @@ REQUIRED_FILES = {
     "sample": "flights_dashboard.csv",
     "kpi": "kpi_global.csv",
     "monthly": "monthly_delay.csv",
-    "hourly": "hourly_delay.csv",
-    "weekday": "weekday_delay.csv",
     "day_period": "day_period_delay.csv",
     "weekday_hour": "weekday_hour_delay.csv",
     "month_hour": "month_hour_delay.csv",
@@ -50,7 +48,6 @@ REQUIRED_FILES = {
     "propagation_by_seq": "propagation_by_seq.csv",
     "propagation_conditional": "propagation_conditional.csv",
     "propagation_turnaround": "propagation_turnaround.csv",
-    "propagation_kpi": "propagation_kpi.csv",
 }
 
 
@@ -71,27 +68,11 @@ def enrich_airline_delay(airline_df: pd.DataFrame) -> pd.DataFrame:
             airline["nb_retards"] / airline["nb_vols"] * 100
         ).round(2)
 
-    total_vols = airline["nb_vols"].sum()
-    total_retards = airline["nb_retards"].sum()
-    taux_global = total_retards / total_vols * 100 if total_vols else 0.0
-
-    airline["part_vols_reseau_percent"] = (
-        airline["nb_vols"] / total_vols * 100
-    ).round(2)
-    airline["part_retards_reseau_percent"] = (
-        airline["nb_retards"] / total_retards * 100
-    ).round(2)
-    airline["indice_vs_taille_flotte"] = (
-        airline["part_retards_reseau_percent"] / airline["part_vols_reseau_percent"]
-    ).round(2)
-    airline["ecart_vs_reseau_pts"] = (
-        airline["taux_retard_percent"] - taux_global
-    ).round(2)
-    return airline
+    return recalculate_airline_shares(airline)
 
 
 @st.cache_data
-def load_dashboard_data(_cache_version: int = 2):
+def load_dashboard_data(_cache_version: int = 3):
     missing = [
         file_name for file_name in REQUIRED_FILES.values()
         if not (DATA_DIR / file_name).exists()
@@ -169,36 +150,6 @@ def compute_kpis(df):
         "arrival_delay": df["ARRIVAL_DELAY_FILLED"].mean(),
         "departure_delay": df["DEPARTURE_DELAY_FILLED"].mean(),
     }
-
-
-def delay_group(df, group_col):
-    if df.empty:
-        return pd.DataFrame(
-            columns=[
-                group_col,
-                "nb_vols",
-                "nb_retards",
-                "retard_moyen_arrivee",
-                "taux_retard_percent",
-            ]
-        )
-
-    grouped = (
-        df.groupby(group_col, observed=True)
-        .agg(
-            nb_vols=("IS_DELAYED", "size"),
-            nb_retards=("IS_DELAYED", "sum"),
-            retard_moyen_arrivee=("ARRIVAL_DELAY_FILLED", "mean"),
-            retard_moyen_depart=("DEPARTURE_DELAY_FILLED", "mean"),
-        )
-        .reset_index()
-    )
-    grouped["taux_retard_percent"] = (
-        grouped["nb_retards"] / grouped["nb_vols"] * 100
-    ).round(2)
-    grouped["retard_moyen_arrivee"] = grouped["retard_moyen_arrivee"].round(2)
-    grouped["retard_moyen_depart"] = grouped["retard_moyen_depart"].round(2)
-    return grouped
 
 
 def metric_from_kpi(kpi_df, indicator):
@@ -322,7 +273,7 @@ def render_propagation_page(propagation_data):
         )
         fig_compare.update_traces(texttemplate="%{y:.1f}%", textposition="outside")
         fig_compare.update_layout(showlegend=False, yaxis_title="Part des vols en retard (%)")
-        st.plotly_chart(fig_compare, use_container_width=True)
+        st.plotly_chart(fig_compare)
 
         if ecart >= 2:
             st.warning(
@@ -435,7 +386,7 @@ def render_propagation_page(propagation_data):
         yaxis_title="Part des vols en retard à l'arrivée (%)",
         hovermode="x unified",
     )
-    st.plotly_chart(fig_day, use_container_width=True)
+    st.plotly_chart(fig_day)
 
     # Lecture automatique sur le 2e vol
     if len(vol2) == 2:
@@ -463,7 +414,6 @@ def render_propagation_page(propagation_data):
                     "nb_vols",
                 ]
             ],
-            use_container_width=True,
             hide_index=True,
         )
         st.caption(
@@ -532,7 +482,7 @@ def render_propagation_page(propagation_data):
                 },
             )
             fig_turn.update_traces(texttemplate="%{y:.1f}%", textposition="outside")
-            st.plotly_chart(fig_turn, use_container_width=True)
+            st.plotly_chart(fig_turn)
 
             best = turn_compare[turn_compare["prev_arr_delayed"] == 1].sort_values(
                 "Ecart vs habituel (pts)", ascending=False
@@ -552,7 +502,7 @@ def render_propagation_page(propagation_data):
                 title="Taux de retard au départ après escale",
                 labels=plotly_axis_labels(),
             )
-            st.plotly_chart(fig_simple, use_container_width=True)
+            st.plotly_chart(fig_simple)
             st.caption(
                 "Peu d'aéroports ont les deux situations dans l'échantillon : "
                 "régénérez les exports avec le notebook sur le fichier complet."
@@ -577,9 +527,9 @@ def render_propagation_page(propagation_data):
         cond_display["condition_met"] = cond_display["condition_met"].map(
             {"non": "Non", "oui": "Oui"}
         )
-        show_table(cond_display, use_container_width=True, hide_index=True)
+        show_table(cond_display, hide_index=True)
         st.markdown("**Par position dans la journée**")
-        show_table(by_seq, use_container_width=True, hide_index=True)
+        show_table(by_seq, hide_index=True)
 
 
 def _enrich_route_table(route_df: pd.DataFrame) -> pd.DataFrame:
@@ -734,7 +684,7 @@ def render_routes_page(filtered_df: pd.DataFrame, static_routes: pd.DataFrame) -
         )
         fig_high.update_traces(texttemplate="%{x:.1f}%", textposition="outside")
         fig_high.update_layout(margin=dict(r=40))
-        st.plotly_chart(fig_high, use_container_width=True)
+        st.plotly_chart(fig_high)
 
     with col_right:
         top_impact_plot = plot_routes.sort_values("impact_score", ascending=False).head(12)
@@ -747,7 +697,7 @@ def render_routes_page(filtered_df: pd.DataFrame, static_routes: pd.DataFrame) -
             labels=plotly_axis_labels(),
             color_discrete_sequence=[COLOR_PRIMARY],
         )
-        st.plotly_chart(fig_impact, use_container_width=True)
+        st.plotly_chart(fig_impact)
         st.caption(
             f"Ex. volume : **{top_impact['ROUTE_LABEL']}** cumule le plus de minutes de retard "
             f"({top_impact['nb_retards']:,} retards, {top_impact['retard_moyen_arrivee']:.1f} min en moyenne)."
@@ -789,7 +739,7 @@ def render_routes_page(filtered_df: pd.DataFrame, static_routes: pd.DataFrame) -
             coloraxis_showscale=False,
             margin=dict(t=60, b=40),
         )
-        st.plotly_chart(fig_distance, use_container_width=True)
+        st.plotly_chart(fig_distance)
         st.caption(
             "Taux pondéré par le nombre de vols dans chaque tranche — plus lisible "
             "qu'un nuage de centaines de routes."
@@ -807,7 +757,6 @@ def render_routes_page(filtered_df: pd.DataFrame, static_routes: pd.DataFrame) -
                     "distance_moyenne",
                 ]
             ],
-            use_container_width=True,
             hide_index=True,
         )
         st.caption(
@@ -830,7 +779,6 @@ def render_routes_page(filtered_df: pd.DataFrame, static_routes: pd.DataFrame) -
     ]
     show_table(
         routes[display_cols],
-        use_container_width=True,
         hide_index=True,
     )
 
@@ -886,7 +834,6 @@ with tabs[0]:
                 title="Repartition des niveaux de retard",
                 labels=plotly_axis_labels(),
             ),
-            use_container_width=True,
         )
     with right:
         st.plotly_chart(
@@ -899,7 +846,6 @@ with tabs[0]:
                 title="Mois : volume de vols vs taux de retard",
                 labels=plotly_axis_labels(),
             ),
-            use_container_width=True,
         )
 
     st.subheader("Vue filtree sur l'echantillon interactif")
@@ -923,7 +869,6 @@ with tabs[1]:
                 title="Evolution mensuelle : taux et retard moyen",
                 labels=plotly_axis_labels(),
             ),
-            use_container_width=True,
         )
     with col_right:
         st.plotly_chart(
@@ -935,7 +880,6 @@ with tabs[1]:
                 title="Taux de retard par periode de journee",
                 labels=plotly_axis_labels(),
             ),
-            use_container_width=True,
         )
 
     st.plotly_chart(
@@ -948,7 +892,6 @@ with tabs[1]:
             "Heure de depart",
             "Jour de semaine",
         ),
-        use_container_width=True,
     )
     st.plotly_chart(
         heatmap_chart(
@@ -960,7 +903,6 @@ with tabs[1]:
             "Heure de depart",
             "Mois",
         ),
-        use_container_width=True,
     )
 
 with tabs[2]:
@@ -992,7 +934,6 @@ with tabs[2]:
             height=520,
             title="Carte des aeroports de depart : volume et taux de retard",
         ),
-        use_container_width=True,
     )
 
     min_volume = st.slider(
@@ -1017,7 +958,6 @@ with tabs[2]:
                 title="Top aeroports par volume de retards",
                 labels=plotly_axis_labels(),
             ),
-            use_container_width=True,
         )
     with col_right:
         st.plotly_chart(
@@ -1029,7 +969,6 @@ with tabs[2]:
                 title="Top aeroports par taux de retard",
                 labels=plotly_axis_labels(),
             ),
-            use_container_width=True,
         )
 
     focus_airport = st.selectbox(
@@ -1050,7 +989,6 @@ with tabs[2]:
         data["destination_airport"]
         .sort_values("nb_retards", ascending=False)
         .head(20),
-        use_container_width=True,
     )
     st.caption(
         "Pour comparer les **liaisons depart → arrivee** (taux, ecart, impact), "
@@ -1166,7 +1104,7 @@ with tabs[3]:
                     )
                 if metric_col == "indice_vs_taille_flotte":
                     fig_rate.add_vline(x=1.0, line_dash="dash", line_color=COLOR_MUTED)
-                st.plotly_chart(fig_rate, use_container_width=True)
+                st.plotly_chart(fig_rate)
                 if metric_choice == "Taux propre (%)":
                     st.caption(
                         "Le taux propre change peu pour une meme compagnie ; passez a "
@@ -1198,7 +1136,7 @@ with tabs[3]:
                     y1=max_axis,
                     line=dict(color=COLOR_MUTED, dash="dash"),
                 )
-                st.plotly_chart(fig_scatter, use_container_width=True)
+                st.plotly_chart(fig_scatter)
 
             display_cols = [
                 "AIRLINE_LABEL",
@@ -1212,7 +1150,6 @@ with tabs[3]:
             ]
             show_table(
                 airline_f[display_cols],
-                use_container_width=True,
                 hide_index=True,
             )
 
@@ -1229,10 +1166,10 @@ with tabs[6]:
     col_left, col_right = st.columns(2)
     with col_left:
         st.write("Risque eleve : taux de retard fort avec volume suffisant.")
-        show_table(data["risk"].head(25), use_container_width=True)
+        show_table(data["risk"].head(25))
     with col_right:
         st.write("Impact eleve : volume de retards et minutes perdues.")
-        show_table(data["impact"].head(25), use_container_width=True)
+        show_table(data["impact"].head(25))
 
     st.plotly_chart(
         px.bar(
@@ -1244,7 +1181,6 @@ with tabs[6]:
             title="Top situations par score de risque",
             labels=plotly_axis_labels(),
         ),
-        use_container_width=True,
     )
 
     st.subheader("Recommandations automatiques")
@@ -1261,7 +1197,7 @@ with tabs[6]:
 
 with tabs[7]:
     st.subheader("Modelisation predictive")
-    show_table(data["model_metrics"], use_container_width=True)
+    show_table(data["model_metrics"])
 
     col_left, col_right = st.columns(2)
     with col_left:
@@ -1274,7 +1210,6 @@ with tabs[7]:
                 title="Comparaison des metriques modele",
                 labels=plotly_axis_labels(),
             ),
-            use_container_width=True,
         )
     with col_right:
         confusion_pivot = data["model_confusion"].pivot(
@@ -1292,7 +1227,6 @@ with tabs[7]:
                     "color": label_for("nombre"),
                 },
             ),
-            use_container_width=True,
         )
 
     st.plotly_chart(
@@ -1304,7 +1238,6 @@ with tabs[7]:
             title="Facteurs les plus importants",
             labels=plotly_axis_labels(),
         ),
-        use_container_width=True,
     )
 
     st.markdown(

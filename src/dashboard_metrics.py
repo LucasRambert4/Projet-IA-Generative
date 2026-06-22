@@ -73,7 +73,6 @@ COLUMN_LABELS: dict[str, str] = {
     "hover": "Aéroport",
     "prev_arr_delayed": "Vol précédent en retard",
     "first_flight_delayed": "Premier vol en retard",
-    "first_flight_delayed_label": "Premier vol de la journée",
 }
 
 
@@ -123,19 +122,7 @@ def build_airline_delay(
     if grouped.empty:
         return grouped
 
-    total_vols = grouped["nb_vols"].sum()
-    total_retards = grouped["nb_retards"].sum()
-    taux_global = total_retards / total_vols * 100 if total_vols else 0.0
-
     grouped["taux_retard_percent"] = (grouped["nb_retards"] / grouped["nb_vols"] * 100).round(2)
-    grouped["part_vols_reseau_percent"] = (grouped["nb_vols"] / total_vols * 100).round(2)
-    grouped["part_retards_reseau_percent"] = (
-        grouped["nb_retards"] / total_retards * 100
-    ).round(2)
-    grouped["indice_vs_taille_flotte"] = (
-        grouped["part_retards_reseau_percent"] / grouped["part_vols_reseau_percent"]
-    ).round(2)
-    grouped["ecart_vs_reseau_pts"] = (grouped["taux_retard_percent"] - taux_global).round(2)
     grouped["retard_moyen_arrivee"] = grouped["retard_moyen_arrivee"].round(2)
     grouped["retard_moyen_depart"] = grouped["retard_moyen_depart"].round(2)
     grouped["distance_moyenne"] = grouped["distance_moyenne"].round(2)
