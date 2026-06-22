@@ -14,7 +14,7 @@ from dashboard_metrics import (
 )
 
 
-DATA_DIR = Path(__file__).parent / "dashboard_data"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "dashboard"
 
 # Palette bleue du dashboard
 COLOR_PRIMARY = "#2563eb"
@@ -100,7 +100,7 @@ def load_dashboard_data(_cache_version: int = 2):
         st.error(
             "Fichiers dashboard manquants : "
             + ", ".join(missing)
-            + ". Regenerez les exports du dossier dashboard_data."
+            + ". Regenerez les exports du dossier data/dashboard."
         )
         st.stop()
 

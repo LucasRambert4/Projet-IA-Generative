@@ -2,7 +2,7 @@
 
 ## 1. Contexte et objectif
 
-Ce projet de data science analyse les retards de vols a partir d'un jeu de donnees aerien compose principalement de `flights.csv`, complete par les tables de correspondance `airlines.csv` et `airports.csv`.
+Ce projet de data science analyse les retards de vols a partir d'un jeu de donnees aerien compose principalement de `data/raw/flights.csv`, complete par les tables de correspondance `data/raw/airlines.csv` et `data/raw/airports.csv`.
 
 L'objectif metier est d'aider un responsable des operations aeriennes a comprendre les facteurs associes aux retards, a suivre les situations a risque dans un dashboard interactif, puis a utiliser un premier modele predictif pour anticiper les vols susceptibles d'arriver avec au moins 15 minutes de retard.
 
@@ -19,9 +19,9 @@ Le projet repond aux attendus suivants :
 
 Trois fichiers principaux sont utilises :
 
-- `flights.csv` : table principale des vols, horaires, aeroports, compagnies et retards ;
-- `airlines.csv` : correspondance entre codes compagnies et noms complets ;
-- `airports.csv` : informations sur les aeroports, villes, etats et coordonnees geographiques.
+- `data/raw/flights.csv` : table principale des vols, horaires, aeroports, compagnies et retards ;
+- `data/raw/airlines.csv` : correspondance entre codes compagnies et noms complets ;
+- `data/raw/airports.csv` : informations sur les aeroports, villes, etats et coordonnees geographiques.
 
 Le fichier `flights.csv` contient plus de 5,8 millions de lignes. Le projet s'appuie donc sur des aggregations pour les analyses globales et sur un echantillon controle pour certaines parties interactives ou de modelisation.
 
@@ -60,9 +60,9 @@ Cette analyse permet de passer d'une lecture descriptive generale a une lecture 
 
 ## 5. Dashboard interactif
 
-Le dashboard Streamlit est disponible dans `streamlit_app.py`.
+Le dashboard Streamlit est disponible dans `src/streamlit_app.py`.
 
-Il s'appuie sur les fichiers prepares dans `dashboard_data/` et permet de suivre :
+Il s'appuie sur les fichiers prepares dans `data/dashboard/` et permet de suivre :
 
 - les indicateurs globaux ;
 - les tendances temporelles ;
@@ -114,7 +114,7 @@ Les modeles sont evalues avec plusieurs metriques :
 - balanced accuracy ;
 - matrice de confusion.
 
-Les resultats exportes dans `dashboard_data/model_metrics.csv` sont les suivants :
+Les resultats exportes dans `data/dashboard/model_metrics.csv` sont les suivants :
 
 | Modele | Split | Accuracy | Precision retard | Recall retard | F1 retard | ROC-AUC | Balanced accuracy |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |

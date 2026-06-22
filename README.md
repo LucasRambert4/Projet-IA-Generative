@@ -26,36 +26,41 @@ Le projet cherche a repondre aux questions suivantes :
 ```text
 .
 |-- README.md
-|-- rapport_projet.md
 |-- requirements.txt
-|-- flights_delay.ipynb
-|-- streamlit_app.py
-|-- dashboard_metrics.py
-|-- propagation_analysis.py
-|-- flights.csv
-|-- airlines.csv
-|-- airports.csv
-`-- dashboard_data/
-    |-- flights_dashboard.csv
-    |-- kpi_global.csv
-    |-- airline_delay.csv
-    |-- airport_delay.csv
-    |-- route_delay.csv
-    |-- model_metrics.csv
-    |-- model_confusion_matrix.csv
-    |-- model_feature_importance.csv
-    `-- autres fichiers agreges pour le dashboard
+|-- data/
+|   |-- raw/
+|   |   |-- flights.csv
+|   |   |-- airlines.csv
+|   |   `-- airports.csv
+|   `-- dashboard/
+|       |-- flights_dashboard.csv
+|       |-- kpi_global.csv
+|       |-- airline_delay.csv
+|       |-- airport_delay.csv
+|       |-- route_delay.csv
+|       |-- model_metrics.csv
+|       |-- model_confusion_matrix.csv
+|       |-- model_feature_importance.csv
+|       `-- autres fichiers agreges pour le dashboard
+|-- src/
+|   |-- streamlit_app.py
+|   |-- dashboard_metrics.py
+|   `-- propagation_analysis.py
+|-- notebooks/
+|   `-- flights_delay.ipynb
+`-- docs/
+    `-- rapport_projet.md
 ```
 
 ## Donnees
 
-Le projet utilise trois fichiers principaux :
+Le projet utilise trois fichiers principaux dans `data/raw/` :
 
-- `flights.csv` : table principale des vols ;
-- `airlines.csv` : table de correspondance des compagnies aeriennes ;
-- `airports.csv` : table de correspondance des aeroports.
+- `data/raw/flights.csv` : table principale des vols ;
+- `data/raw/airlines.csv` : table de correspondance des compagnies aeriennes ;
+- `data/raw/airports.csv` : table de correspondance des aeroports.
 
-Le fichier `flights.csv` est volumineux. Les calculs globaux sont faits dans le notebook, puis des fichiers agreges sont exportes dans `dashboard_data/` afin que le dashboard soit plus rapide a charger.
+Le fichier `flights.csv` est volumineux. Les calculs globaux sont faits dans le notebook, puis des fichiers agreges sont exportes dans `data/dashboard/` afin que le dashboard soit plus rapide a charger.
 
 ## Installation
 
@@ -82,7 +87,7 @@ pip install -r requirements.txt
 ## Lancer le dashboard
 
 ```bash
-streamlit run streamlit_app.py
+streamlit run src/streamlit_app.py
 ```
 
 Puis ouvrir l'URL affichee par Streamlit, generalement :
@@ -99,7 +104,7 @@ http://127.0.0.1:8501
 
 ## Lancer le notebook
 
-Ouvrir `flights_delay.ipynb` dans Jupyter, VS Code ou un environnement compatible.
+Ouvrir `notebooks/flights_delay.ipynb` dans Jupyter, VS Code ou un environnement compatible.
 
 Le notebook contient :
 
@@ -115,7 +120,7 @@ Le notebook contient :
 - comparaison des modeles ;
 - conclusion.
 
-Le notebook peut etre long a executer car `flights.csv` contient plusieurs millions de lignes.
+Le notebook peut etre long a executer car `data/raw/flights.csv` contient plusieurs millions de lignes.
 
 ## Methodologie
 
@@ -150,7 +155,7 @@ Le dashboard permet d'explorer les resultats avec des filtres et plusieurs ongle
 - modele ;
 - recommandations.
 
-Les fichiers du dossier `dashboard_data/` servent de couche de donnees optimisee pour l'application.
+Les fichiers du dossier `data/dashboard/` servent de couche de donnees optimisee pour l'application.
 
 ### 4. Modelisation
 
@@ -210,7 +215,7 @@ Variables importantes du modele :
 
 Le rapport detaille du projet est disponible ici :
 
-[rapport_projet.md](rapport_projet.md)
+[docs/rapport_projet.md](docs/rapport_projet.md)
 
 Il contient :
 
@@ -266,7 +271,7 @@ Cette approche rend le projet plus fluide a utiliser et plus raisonnable en ress
 - Les donnees sont historiques.
 - Certaines variables externes importantes, comme la meteo detaillee, ne sont pas disponibles.
 - Les performances du modele restent moderees.
-- Le dashboard depend des fichiers exportes dans `dashboard_data/`.
+- Le dashboard depend des fichiers exportes dans `data/dashboard/`.
 - Une validation metier serait necessaire avant tout deploiement operationnel.
 
 ## Commandes utiles
@@ -280,13 +285,13 @@ pip install -r requirements.txt
 Lancer le dashboard :
 
 ```bash
-streamlit run streamlit_app.py
+streamlit run src/streamlit_app.py
 ```
 
 Verifier rapidement les scripts Python :
 
 ```bash
-python -m py_compile dashboard_metrics.py propagation_analysis.py streamlit_app.py
+python -m py_compile src/dashboard_metrics.py src/propagation_analysis.py src/streamlit_app.py
 ```
 
 ## Etat du projet
