@@ -1,8 +1,14 @@
 from pathlib import Path
+import queue
+import threading
+from datetime import timedelta
 
 import pandas as pd
 import plotly.express as px
+import plotly.io as pio
 import streamlit as st
+
+pio.templates.default = "plotly"
 
 from dashboard_metrics import (
     build_airline_delay,
@@ -12,6 +18,7 @@ from dashboard_metrics import (
     recalculate_airline_shares,
     rename_for_display,
 )
+import voice_navigation as voice
 
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "dashboard"
@@ -93,27 +100,37 @@ def load_dashboard_data(_cache_version: int = 3):
     return loaded
 
 
-def selected_filter(label, values):
+def selected_filter(label, values, session_key: str):
     values = sorted(pd.Series(values).dropna().astype(str).unique())
-    return st.sidebar.multiselect(label, values)
+    if session_key not in st.session_state:
+        st.session_state[session_key] = []
+    return st.sidebar.multiselect(label, values, key=session_key)
 
 
 def filter_dashboard(df):
     st.sidebar.header("Filtres")
     st.sidebar.caption("Laisser vide pour conserver toutes les valeurs.")
 
-    selected_airlines = selected_filter("Compagnies", df["AIRLINE"])
+    selected_airlines = selected_filter("Compagnies", df["AIRLINE"], "filter_airlines")
     selected_months = st.sidebar.multiselect(
-        "Mois", sorted(df["MONTH"].dropna().unique())
+        "Mois",
+        sorted(df["MONTH"].dropna().unique()),
+        key="filter_months",
     )
-    selected_origins = selected_filter("Aeroports de depart", df["ORIGIN_AIRPORT"])
+    selected_origins = selected_filter(
+        "Aeroports de depart", df["ORIGIN_AIRPORT"], "filter_origins"
+    )
     selected_destinations = selected_filter(
-        "Aeroports d'arrivee", df["DESTINATION_AIRPORT"]
+        "Aeroports d'arrivee", df["DESTINATION_AIRPORT"], "filter_destinations"
     )
     selected_weekdays = st.sidebar.multiselect(
-        "Jours de semaine", sorted(df["DAY_OF_WEEK"].dropna().unique())
+        "Jours de semaine",
+        sorted(df["DAY_OF_WEEK"].dropna().unique()),
+        key="filter_weekdays",
     )
-    selected_periods = selected_filter("Periodes de journee", df["DAY_PERIOD"])
+    selected_periods = selected_filter(
+        "Periodes de journee", df["DAY_PERIOD"], "filter_periods"
+    )
 
     filtered = df.copy()
     if selected_airlines:
@@ -134,6 +151,169 @@ def filter_dashboard(df):
         filtered = filtered[filtered["DAY_PERIOD"].astype(str).isin(selected_periods)]
 
     return filtered
+
+
+def apply_session_filters(df: pd.DataFrame) -> pd.DataFrame:
+    """Applique les filtres sidebar depuis session_state (sans widgets)."""
+    filtered = df.copy()
+    airlines = st.session_state.get("filter_airlines", [])
+    months = st.session_state.get("filter_months", [])
+    origins = st.session_state.get("filter_origins", [])
+    destinations = st.session_state.get("filter_destinations", [])
+    weekdays = st.session_state.get("filter_weekdays", [])
+    periods = st.session_state.get("filter_periods", [])
+
+    if airlines:
+        filtered = filtered[filtered["AIRLINE"].astype(str).isin(airlines)]
+    if months:
+        filtered = filtered[filtered["MONTH"].isin(months)]
+    if origins:
+        filtered = filtered[filtered["ORIGIN_AIRPORT"].astype(str).isin(origins)]
+    if destinations:
+        filtered = filtered[
+            filtered["DESTINATION_AIRPORT"].astype(str).isin(destinations)
+        ]
+    if weekdays:
+        filtered = filtered[filtered["DAY_OF_WEEK"].isin(weekdays)]
+    if periods:
+        filtered = filtered[filtered["DAY_PERIOD"].astype(str).isin(periods)]
+    return filtered
+
+
+def build_synthesis_context(
+    filtered_df: pd.DataFrame,
+    data: dict,
+    airline_labels: dict[str, str],
+) -> dict:
+    """Construit le contexte JSON envoye a Ollama pour la synthese."""
+    kpis_filtered = compute_kpis(filtered_df)
+    kpi_global = {
+        str(row["indicateur"]): float(row["valeur"])
+        for _, row in data["kpi"].iterrows()
+    }
+
+    def _label_airlines(codes: list) -> list[str]:
+        return [airline_labels.get(str(c), str(c)) for c in codes]
+
+    context: dict = {
+        "onglet_actif": st.session_state.get("active_tab"),
+        "filtres_actifs": {
+            "compagnies": _label_airlines(st.session_state.get("filter_airlines", [])),
+            "mois": st.session_state.get("filter_months", []),
+            "aeroports_depart": st.session_state.get("filter_origins", []),
+            "aeroports_arrivee": st.session_state.get("filter_destinations", []),
+            "jours_semaine": st.session_state.get("filter_weekdays", []),
+            "periodes_journee": st.session_state.get("filter_periods", []),
+        },
+        "kpis_reseau_global": kpi_global,
+        "kpis_echantillon_filtre": {
+            "nb_vols": kpis_filtered["total"],
+            "taux_retard_percent": round(kpis_filtered["delay_rate"], 2),
+            "retard_moyen_arrivee_min": round(kpis_filtered["arrival_delay"], 2),
+            "retard_moyen_depart_min": round(kpis_filtered["departure_delay"], 2),
+        },
+    }
+
+    active = str(st.session_state.get("active_tab", ""))
+
+    if "Compagnies" in active and not data["airline"].empty:
+        top = data["airline"].sort_values("taux_retard_percent", ascending=False).head(5)
+        context["top_compagnies_taux_retard"] = [
+            {
+                "compagnie": str(row.get("AIRLINE_LABEL", row["AIRLINE"])),
+                "taux_retard_percent": float(row["taux_retard_percent"]),
+                "nb_vols": int(row["nb_vols"]),
+            }
+            for _, row in top.iterrows()
+        ]
+
+    if "Aeroports" in active and not data["airport"].empty:
+        top = data["airport"].sort_values("nb_retards", ascending=False).head(5)
+        context["top_aeroports_volume_retards"] = [
+            {
+                "aeroport": str(row["ORIGIN_AIRPORT"]),
+                "nb_retards": int(row["nb_retards"]),
+                "taux_retard_percent": float(row["taux_retard_percent"]),
+            }
+            for _, row in top.iterrows()
+        ]
+
+    if "Temporalite" in active and not data["monthly"].empty:
+        worst = data["monthly"].sort_values("taux_retard_percent", ascending=False).iloc[0]
+        context["mois_plus_expose"] = {
+            "mois": int(worst["MONTH"]),
+            "taux_retard_percent": float(worst["taux_retard_percent"]),
+            "nb_vols": int(worst["nb_vols"]),
+        }
+
+    if "Routes" in active and not data["route"].empty:
+        top = data["route"].sort_values("taux_retard_percent", ascending=False).head(5)
+        context["routes_plus_retardees"] = [
+            {
+                "route": str(row.get("ROUTE_LABEL", "")),
+                "taux_retard_percent": float(row["taux_retard_percent"]),
+                "nb_vols": int(row["nb_vols"]),
+            }
+            for _, row in top.iterrows()
+        ]
+
+    if "Decisions" in active and not data["risk"].empty:
+        top = data["risk"].iloc[0]
+        context["situation_risque_max"] = {
+            "compagnie": str(top["AIRLINE"]),
+            "aeroport": str(top["ORIGIN_AIRPORT"]),
+            "heure": int(top["SCHEDULED_DEP_HOUR"]),
+            "score_risque": float(top["risk_score"]),
+        }
+
+    if "Modelisation" in active and not data["model_metrics"].empty:
+        best = data["model_metrics"].sort_values("recall_retard", ascending=False).iloc[0]
+        context["modele_predictif"] = {
+            "modele": str(best["modele"]),
+            "split": str(best["split"]),
+            "recall_retard": float(best["recall_retard"]),
+            "balanced_accuracy": float(best["balanced_accuracy"]),
+        }
+
+    return context
+
+
+def run_voice_synthesis_if_pending(filtered_df: pd.DataFrame, data: dict) -> None:
+    """Declenche la synthese Ollama apres une commande vocale."""
+    pending = st.session_state.get("voice_pending_synthesis")
+    if not pending:
+        return
+
+    st.session_state.voice_pending_synthesis = None
+    if pending.get("command_action") == "unknown":
+        return
+
+    airline_labels = build_airline_label_map(data["airline"])
+    context = build_synthesis_context(filtered_df, data, airline_labels)
+
+    if not voice.check_ollama_available():
+        st.session_state.voice_synthesis = (
+            "Synthese IA indisponible : Ollama n'est pas demarre."
+        )
+        return
+
+    try:
+        with st.spinner("Generation de la synthese IA (Ollama)..."):
+            st.session_state.voice_synthesis = voice.generate_data_synthesis(
+                pending, context
+            )
+    except Exception as exc:
+        st.session_state.voice_synthesis = f"Synthese IA indisponible : {exc}"
+
+
+def render_voice_synthesis_panel() -> None:
+    """Affiche la derniere synthese generee par Ollama."""
+    synthesis = st.session_state.get("voice_synthesis", "").strip()
+    if not synthesis:
+        return
+
+    st.markdown("### Synthese IA (Ollama)")
+    st.info(synthesis)
 
 
 def compute_kpis(df):
@@ -171,6 +351,47 @@ def heatmap_chart(df, index, columns, values, title, x_title, y_title):
         title=title,
     )
     fig.update_layout(margin=dict(l=20, r=20, t=60, b=20))
+    return fig
+
+
+def show_plotly(fig) -> None:
+    """Affiche un graphique Plotly (theme natif, compatible Streamlit)."""
+    st.plotly_chart(fig, width="stretch", theme=None)
+
+
+def airport_geo_chart(airport_map: pd.DataFrame):
+    """Carte USA des aeroports (scatter_geo : fiable dans Streamlit, sans tuiles MapLibre)."""
+    fig = px.scatter_geo(
+        airport_map,
+        lat="LATITUDE",
+        lon="LONGITUDE",
+        size="nb_retards",
+        color="taux_retard_percent",
+        hover_name="hover",
+        hover_data={
+            "nb_vols": ":,",
+            "nb_retards": ":,",
+            "retard_moyen_arrivee": ":.2f",
+            "LATITUDE": False,
+            "LONGITUDE": False,
+        },
+        labels=plotly_axis_labels(),
+        color_continuous_scale=COLOR_SCALE,
+        size_max=36,
+        title="Carte des aeroports de depart : volume et taux de retard",
+    )
+    fig.update_geos(
+        scope="usa",
+        showland=True,
+        landcolor="#f1f5f9",
+        showcountries=True,
+        countrycolor="#cbd5e1",
+        showsubunits=True,
+        subunitcolor="#e2e8f0",
+        projection_type="albers usa",
+        fitbounds="locations",
+    )
+    fig.update_layout(height=520, margin=dict(l=0, r=0, t=60, b=0))
     return fig
 
 
@@ -273,7 +494,7 @@ def render_propagation_page(propagation_data):
         )
         fig_compare.update_traces(texttemplate="%{y:.1f}%", textposition="outside")
         fig_compare.update_layout(showlegend=False, yaxis_title="Part des vols en retard (%)")
-        st.plotly_chart(fig_compare)
+        show_plotly(fig_compare)
 
         if ecart >= 2:
             st.warning(
@@ -386,7 +607,7 @@ def render_propagation_page(propagation_data):
         yaxis_title="Part des vols en retard à l'arrivée (%)",
         hovermode="x unified",
     )
-    st.plotly_chart(fig_day)
+    show_plotly(fig_day)
 
     # Lecture automatique sur le 2e vol
     if len(vol2) == 2:
@@ -482,7 +703,7 @@ def render_propagation_page(propagation_data):
                 },
             )
             fig_turn.update_traces(texttemplate="%{y:.1f}%", textposition="outside")
-            st.plotly_chart(fig_turn)
+            show_plotly(fig_turn)
 
             best = turn_compare[turn_compare["prev_arr_delayed"] == 1].sort_values(
                 "Ecart vs habituel (pts)", ascending=False
@@ -502,7 +723,7 @@ def render_propagation_page(propagation_data):
                 title="Taux de retard au départ après escale",
                 labels=plotly_axis_labels(),
             )
-            st.plotly_chart(fig_simple)
+            show_plotly(fig_simple)
             st.caption(
                 "Peu d'aéroports ont les deux situations dans l'échantillon : "
                 "régénérez les exports avec le notebook sur le fichier complet."
@@ -684,7 +905,7 @@ def render_routes_page(filtered_df: pd.DataFrame, static_routes: pd.DataFrame) -
         )
         fig_high.update_traces(texttemplate="%{x:.1f}%", textposition="outside")
         fig_high.update_layout(margin=dict(r=40))
-        st.plotly_chart(fig_high)
+        show_plotly(fig_high)
 
     with col_right:
         top_impact_plot = plot_routes.sort_values("impact_score", ascending=False).head(12)
@@ -697,7 +918,7 @@ def render_routes_page(filtered_df: pd.DataFrame, static_routes: pd.DataFrame) -
             labels=plotly_axis_labels(),
             color_discrete_sequence=[COLOR_PRIMARY],
         )
-        st.plotly_chart(fig_impact)
+        show_plotly(fig_impact)
         st.caption(
             f"Ex. volume : **{top_impact['ROUTE_LABEL']}** cumule le plus de minutes de retard "
             f"({top_impact['nb_retards']:,} retards, {top_impact['retard_moyen_arrivee']:.1f} min en moyenne)."
@@ -739,7 +960,7 @@ def render_routes_page(filtered_df: pd.DataFrame, static_routes: pd.DataFrame) -
             coloraxis_showscale=False,
             margin=dict(t=60, b=40),
         )
-        st.plotly_chart(fig_distance)
+        show_plotly(fig_distance)
         st.caption(
             "Taux pondéré par le nombre de vols dans chaque tranche — plus lisible "
             "qu'un nuage de centaines de routes."
@@ -783,30 +1004,281 @@ def render_routes_page(filtered_df: pd.DataFrame, static_routes: pd.DataFrame) -
     )
 
 
+@st.cache_resource(show_spinner="Chargement faster-whisper (modele small)...")
+def get_stt_model():
+    return voice.load_stt_model()
+
+
+def _voice_listener_loop(event_queue: queue.Queue) -> None:
+    """Ecoute continue type Alexa en arriere-plan."""
+    voice.run_alexa_voice_loop(
+        event_queue,
+        get_device=voice.get_input_device,
+        stt_model=voice.load_stt_model(),
+    )
+
+
+def ensure_continuous_voice_listener() -> None:
+    if st.session_state.get("_voice_listener_started"):
+        return
+    if "voice_event_queue" not in st.session_state:
+        st.session_state.voice_event_queue = queue.Queue()
+    st.session_state._voice_listener_started = True
+    thread = threading.Thread(
+        target=_voice_listener_loop,
+        args=(st.session_state.voice_event_queue,),
+        daemon=True,
+    )
+    thread.start()
+
+
+def drain_voice_events() -> None:
+    event_queue = st.session_state.get("voice_event_queue")
+    if event_queue is None:
+        return
+
+    while True:
+        try:
+            event = event_queue.get_nowait()
+        except queue.Empty:
+            break
+
+        kind = event.get("type")
+        if kind == "live":
+            text = (event.get("text") or "").strip()
+            st.session_state.voice_live_input_display = text
+            st.session_state.voice_live_transcript = text
+        elif kind == "status":
+            st.session_state.voice_listen_status = event.get("phase", "wake")
+            message = (event.get("message") or "").strip()
+            if message:
+                st.session_state.voice_status_message = message
+        elif kind == "command":
+            text = (event.get("text") or "").strip()
+            if text:
+                st.session_state.voice_live_input_display = text
+                st.session_state.voice_live_transcript = text
+                st.session_state.voice_pending_command = text
+                st.session_state.voice_feedback = ""
+        elif kind == "error":
+            message = (event.get("message") or "").strip()
+            if message:
+                st.session_state.voice_feedback = message
+            st.session_state.voice_listen_status = "error"
+
+
+def render_live_transcript_panel() -> None:
+    phase = st.session_state.get("voice_listen_status", "wake")
+    status_message = (st.session_state.get("voice_status_message") or "").strip()
+
+    if phase == "command":
+        st.caption(status_message or "OK Google detecte — parlez votre commande.")
+    elif phase == "error":
+        st.caption(status_message or "Micro en erreur.")
+    else:
+        st.caption(
+            status_message
+            or f"En ecoute — dites « {voice.WAKE_WORD_LABEL} » puis votre commande."
+        )
+
+    st.text_input(
+        "Transcription en direct",
+        key="voice_live_input_display",
+        disabled=True,
+        placeholder=f"{voice.WAKE_WORD_LABEL}, va a compagnies",
+        label_visibility="visible",
+    )
+
+
+@st.fragment(run_every=timedelta(seconds=0.3))
+def render_live_transcript_fragment() -> None:
+    drain_voice_events()
+    render_live_transcript_panel()
+
+
+def _flag_voice_text_submitted() -> None:
+    st.session_state._voice_text_submitted = True
+
+
+def build_airline_label_map(airline_df: pd.DataFrame) -> dict[str, str]:
+    if airline_df is None or airline_df.empty or "AIRLINE" not in airline_df.columns:
+        return {}
+    label_col = "AIRLINE_LABEL" if "AIRLINE_LABEL" in airline_df.columns else "AIRLINE"
+    return dict(
+        zip(
+            airline_df["AIRLINE"].astype(str),
+            airline_df[label_col].astype(str),
+        )
+    )
+
+
+def process_voice_input(
+    text: str,
+    dashboard_df: pd.DataFrame,
+    kpi_df: pd.DataFrame,
+    airline_labels: dict[str, str],
+) -> None:
+    command = voice.process_voice_transcript(
+        text,
+        airline_codes=sorted(dashboard_df["AIRLINE"].dropna().astype(str).unique()),
+        origin_airports=sorted(dashboard_df["ORIGIN_AIRPORT"].dropna().astype(str).unique()),
+        destination_airports=sorted(
+            dashboard_df["DESTINATION_AIRPORT"].dropna().astype(str).unique()
+        ),
+        airline_labels=airline_labels,
+    )
+    voice.apply_voice_command(command, kpi_df=kpi_df)
+    st.session_state.last_transcript = text.strip()
+    if command.action != "unknown":
+        st.session_state.voice_pending_synthesis = {
+            "transcript": text.strip(),
+            "command_action": command.action,
+            "command_message": command.message,
+            "command_tab": command.tab,
+            "command_value": command.value,
+        }
+
+
+def render_voice_sidebar(
+    dashboard_df: pd.DataFrame,
+    kpi_df: pd.DataFrame,
+    airline_df: pd.DataFrame,
+) -> None:
+    st.sidebar.markdown("---")
+    st.sidebar.header("Navigation vocale (Ollama local)")
+
+    input_devices = voice.list_input_devices()
+    if not input_devices:
+        st.sidebar.error(
+            "Aucun microphone detecte. Verifiez les permissions macOS "
+            "(Confidentialite > Microphone > Terminal ou Cursor)."
+        )
+        return
+
+    device_labels = {
+        f"{d['name']} (#{d['index']})": int(d["index"]) for d in input_devices
+    }
+    label_by_index = {index: label for label, index in device_labels.items()}
+    if st.session_state.get("voice_input_device") is None:
+        st.session_state.voice_input_device = voice.resolve_input_device()
+
+    current_index = int(st.session_state.voice_input_device)
+    if current_index not in label_by_index:
+        current_index = voice.resolve_input_device()
+        st.session_state.voice_input_device = current_index
+
+    selected_label = st.sidebar.selectbox(
+        "Microphone",
+        list(device_labels.keys()),
+        index=list(device_labels.values()).index(current_index),
+        help=(
+            "Evitez InstaShare, Zoom ou Teams si le micro semble muet. "
+            "Preferez « Microphone MacBook Air »."
+        ),
+    )
+    st.session_state.voice_input_device = device_labels[selected_label]
+    voice.set_input_device(st.session_state.voice_input_device)
+
+    ensure_continuous_voice_listener()
+    drain_voice_events()
+
+    airline_labels = build_airline_label_map(airline_df)
+    pending_command = st.session_state.get("voice_pending_command")
+    if pending_command:
+        st.session_state.voice_pending_command = None
+        process_voice_input(pending_command, dashboard_df, kpi_df, airline_labels)
+        st.rerun()
+
+    ollama_ok = voice.check_ollama_available()
+    if ollama_ok:
+        st.sidebar.caption(
+            f"Mode Alexa : dites « {voice.WAKE_WORD_LABEL} » pour activer, "
+            f"puis votre commande (silence {min(2.5, voice.VOICE_SILENCE_SECONDS):g} s). "
+            f"STT : faster-whisper `{voice.OLLAMA_STT_MODEL}`."
+        )
+    else:
+        st.sidebar.warning(
+            f"Ollama indisponible ou modele `{voice.OLLAMA_MODEL}` absent. "
+            "Lancez `ollama serve` puis `ollama pull llama3.2`. "
+            "Mode secours : parseur par regles."
+        )
+
+    with st.sidebar:
+        render_live_transcript_fragment()
+
+    if st.session_state.get("voice_feedback"):
+        st.sidebar.info(st.session_state.voice_feedback)
+
+    synthesis = st.session_state.get("voice_synthesis", "").strip()
+    if synthesis:
+        with st.sidebar.expander("Synthese IA", expanded=True):
+            st.markdown(synthesis)
+
+    with st.sidebar.expander("Enregistrement manuel (micro navigateur)", expanded=False):
+        st.caption(
+            "Secours si le micro systeme echoue. Necessite localhost ou HTTPS."
+        )
+        audio = st.audio_input("Enregistrer une commande", key="voice_audio")
+        if audio is not None:
+            audio_bytes = audio.getvalue()
+            audio_hash = hash(audio_bytes)
+            if audio_hash != st.session_state.get("last_audio_hash"):
+                st.session_state.last_audio_hash = audio_hash
+                with st.sidebar.spinner("Transcription locale en cours..."):
+                    try:
+                        transcript = voice.transcribe_audio(
+                            audio_bytes, model=get_stt_model()
+                        )
+                    except Exception as exc:
+                        st.sidebar.error(
+                            "Echec de la transcription (faster-whisper / PyAV). "
+                            f"Detail : {exc}"
+                        )
+                        transcript = ""
+                if transcript:
+                    st.session_state.voice_live_input_display = transcript
+                    st.session_state.voice_live_transcript = transcript
+                    process_voice_input(transcript, dashboard_df, kpi_df, airline_labels)
+                    st.rerun()
+
+    st.sidebar.text_input(
+        "Correction manuelle",
+        placeholder=f"{voice.WAKE_WORD_LABEL}, va a compagnies",
+        key="voice_text_input",
+        on_change=_flag_voice_text_submitted,
+    )
+    if st.session_state.pop("_voice_text_submitted", False):
+        text_cmd = (st.session_state.get("voice_text_input") or "").strip()
+        if text_cmd:
+            st.session_state.voice_live_input_display = text_cmd
+            st.session_state.voice_live_transcript = text_cmd
+            process_voice_input(text_cmd, dashboard_df, kpi_df, airline_labels)
+            st.rerun()
+
+
+voice.init_voice_session_state()
 data = load_dashboard_data()
 dashboard_df = data["sample"]
+render_voice_sidebar(dashboard_df, data["kpi"], data["airline"])
 filtered_df = filter_dashboard(dashboard_df)
+run_voice_synthesis_if_pending(filtered_df, data)
 
 st.title("Dashboard des retards de vols")
 st.caption(
     "Vue globale exacte, exploration filtree sur echantillon et lecture decisionnelle."
 )
+render_voice_synthesis_panel()
 
-tabs = st.tabs(
-    [
-        "1. Vue globale",
-        "2. Temporalite",
-        "3. Aeroports",
-        "4. Compagnies",
-        "5. Même avion",
-        "6. Routes",
-        "7. Decisions",
-        "8. Modelisation",
-        "9. Conclusion",
-    ]
+active_tab = st.radio(
+    "Sections",
+    voice.TAB_LABELS,
+    index=voice.TAB_LABELS.index(st.session_state.active_tab),
+    horizontal=True,
+    label_visibility="collapsed",
 )
+st.session_state.active_tab = active_tab
 
-with tabs[0]:
+if active_tab == voice.TAB_LABELS[0]:
     st.subheader("Vue globale exacte")
     kpi = data["kpi"]
 
@@ -825,7 +1297,7 @@ with tabs[0]:
 
     left, right = st.columns(2)
     with left:
-        st.plotly_chart(
+        show_plotly(
             px.bar(
                 data["delay_level"],
                 x="DELAY_LEVEL",
@@ -836,7 +1308,7 @@ with tabs[0]:
             ),
         )
     with right:
-        st.plotly_chart(
+        show_plotly(
             px.scatter(
                 data["monthly"],
                 x="nb_vols",
@@ -856,11 +1328,11 @@ with tabs[0]:
     col3.metric("Retard arrivee", f"{sample_kpis['arrival_delay']:.2f} min")
     col4.metric("Retard depart", f"{sample_kpis['departure_delay']:.2f} min")
 
-with tabs[1]:
+elif active_tab == voice.TAB_LABELS[1]:
     st.subheader("Temporalite des retards")
     col_left, col_right = st.columns(2)
     with col_left:
-        st.plotly_chart(
+        show_plotly(
             px.line(
                 data["monthly"],
                 x="MONTH",
@@ -871,7 +1343,7 @@ with tabs[1]:
             ),
         )
     with col_right:
-        st.plotly_chart(
+        show_plotly(
             px.bar(
                 data["day_period"].sort_values("taux_retard_percent"),
                 x="DAY_PERIOD",
@@ -882,7 +1354,7 @@ with tabs[1]:
             ),
         )
 
-    st.plotly_chart(
+    show_plotly(
         heatmap_chart(
             data["weekday_hour"],
             "DAY_OF_WEEK",
@@ -893,7 +1365,7 @@ with tabs[1]:
             "Jour de semaine",
         ),
     )
-    st.plotly_chart(
+    show_plotly(
         heatmap_chart(
             data["month_hour"],
             "MONTH",
@@ -905,7 +1377,7 @@ with tabs[1]:
         ),
     )
 
-with tabs[2]:
+elif active_tab == voice.TAB_LABELS[2]:
     st.subheader("Lecture aeroportuaire globale")
     airport_map = data["airport_map"].copy()
     airport_map["hover"] = (
@@ -913,28 +1385,7 @@ with tabs[2]:
         + " - "
         + airport_map["AIRPORT_LABEL"].astype(str)
     )
-    st.plotly_chart(
-        px.scatter_map(
-            airport_map,
-            lat="LATITUDE",
-            lon="LONGITUDE",
-            size="nb_retards",
-            color="taux_retard_percent",
-            hover_name="hover",
-            labels=plotly_axis_labels(),
-            hover_data={
-                "nb_vols": ":,",
-                "nb_retards": ":,",
-                "retard_moyen_arrivee": True,
-                "LATITUDE": False,
-                "LONGITUDE": False,
-            },
-            color_continuous_scale=COLOR_SCALE,
-            zoom=2.7,
-            height=520,
-            title="Carte des aeroports de depart : volume et taux de retard",
-        ),
-    )
+    show_plotly(airport_geo_chart(airport_map))
 
     min_volume = st.slider(
         "Volume minimum pour classer les aeroports",
@@ -949,7 +1400,7 @@ with tabs[2]:
 
     col_left, col_right = st.columns(2)
     with col_left:
-        st.plotly_chart(
+        show_plotly(
             px.bar(
                 airport_filtered.sort_values("nb_retards", ascending=False).head(15),
                 y="ORIGIN_AIRPORT",
@@ -960,7 +1411,7 @@ with tabs[2]:
             ),
         )
     with col_right:
-        st.plotly_chart(
+        show_plotly(
             px.bar(
                 airport_filtered.sort_values("taux_retard_percent", ascending=False).head(15),
                 y="ORIGIN_AIRPORT",
@@ -995,7 +1446,7 @@ with tabs[2]:
         "voir l'onglet **6. Routes**."
     )
 
-with tabs[3]:
+elif active_tab == voice.TAB_LABELS[3]:
     st.subheader("Compagnies aeriennes")
     st.markdown(
         """
@@ -1104,7 +1555,7 @@ with tabs[3]:
                     )
                 if metric_col == "indice_vs_taille_flotte":
                     fig_rate.add_vline(x=1.0, line_dash="dash", line_color=COLOR_MUTED)
-                st.plotly_chart(fig_rate)
+                show_plotly(fig_rate)
                 if metric_choice == "Taux propre (%)":
                     st.caption(
                         "Le taux propre change peu pour une meme compagnie ; passez a "
@@ -1136,7 +1587,7 @@ with tabs[3]:
                     y1=max_axis,
                     line=dict(color=COLOR_MUTED, dash="dash"),
                 )
-                st.plotly_chart(fig_scatter)
+                show_plotly(fig_scatter)
 
             display_cols = [
                 "AIRLINE_LABEL",
@@ -1153,15 +1604,15 @@ with tabs[3]:
                 hide_index=True,
             )
 
-with tabs[4]:
+elif active_tab == voice.TAB_LABELS[4]:
     st.subheader("Propagation des retards — même avion")
     render_propagation_page(data)
 
 
-with tabs[5]:
+elif active_tab == voice.TAB_LABELS[5]:
     render_routes_page(filtered_df, data["route"])
 
-with tabs[6]:
+elif active_tab == voice.TAB_LABELS[6]:
     st.subheader("Situations a risque et impact operationnel")
     col_left, col_right = st.columns(2)
     with col_left:
@@ -1171,7 +1622,7 @@ with tabs[6]:
         st.write("Impact eleve : volume de retards et minutes perdues.")
         show_table(data["impact"].head(25))
 
-    st.plotly_chart(
+    show_plotly(
         px.bar(
             data["risk"].head(15),
             y="ORIGIN_AIRPORT",
@@ -1195,13 +1646,13 @@ with tabs[6]:
         """
     )
 
-with tabs[7]:
+elif active_tab == voice.TAB_LABELS[7]:
     st.subheader("Modelisation predictive")
     show_table(data["model_metrics"])
 
     col_left, col_right = st.columns(2)
     with col_left:
-        st.plotly_chart(
+        show_plotly(
             px.bar(
                 data["model_metrics"],
                 x="modele",
@@ -1215,7 +1666,7 @@ with tabs[7]:
         confusion_pivot = data["model_confusion"].pivot(
             index="reel", columns="predit", values="nombre"
         )
-        st.plotly_chart(
+        show_plotly(
             px.imshow(
                 confusion_pivot,
                 text_auto=True,
@@ -1229,7 +1680,7 @@ with tabs[7]:
             ),
         )
 
-    st.plotly_chart(
+    show_plotly(
         px.bar(
             data["feature_importance"].sort_values("importance", ascending=True),
             x="importance",
@@ -1248,7 +1699,7 @@ with tabs[7]:
         """
     )
 
-with tabs[8]:
+elif active_tab == voice.TAB_LABELS[8]:
     st.subheader("Conclusion generale")
     st.markdown(
         """

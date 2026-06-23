@@ -4,3 +4,8 @@ matplotlib
 scikit-learn
 plotly
 streamlit
+ollama
+faster-whisper
+av
+sounddevice
+pytest
