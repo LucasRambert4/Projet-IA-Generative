@@ -199,6 +199,7 @@ def render_resume_page(df):
     st.subheader("Données utilisées")
     st.dataframe(df, use_container_width=True)
 
+   
 
 def render_ventes_page(df):
     st.header("Analyse des ventes")
@@ -283,110 +284,116 @@ def process_external_voice_command():
     parsed_command = event.get("parsed_command", {})
     apply_dashboard_command(st, parsed_command)
 
-
-def render_pending_scroll_action(scroll_placeholder):
+def render_pending_scroll_action():
     """
     Executes a pending scroll action in the browser.
 
-    The JavaScript is rendered inside a placeholder placed near the top
-    of the Streamlit app, but filled after the page content is rendered.
-    This makes the scroll more reliable.
+    This version is more precise:
+    - it finds the largest scrollable Streamlit container
+    - it scrolls only one target
+    - it avoids multiplying the scroll action
     """
 
     direction = st.session_state.get("pending_scroll_direction")
-    amount = st.session_state.get("pending_scroll_amount", 700)
+    amount = st.session_state.get("pending_scroll_amount", 650)
+    action_id = st.session_state.get("scroll_action_id", 0)
 
     if not direction:
         return
 
-    with scroll_placeholder:
-        components.html(
-            f"""
-            <script>
+    components.html(
+        f"""
+        <script>
+        (function() {{
             const direction = "{direction}";
             const amount = {amount};
+            const actionId = "{action_id}";
 
-            function findScrollableElement() {{
+            function findBestScrollableElement() {{
                 const parentWindow = window.parent;
                 const doc = parentWindow.document;
 
-                const candidates = [
-                    parentWindow,
-                    doc.scrollingElement,
-                    doc.documentElement,
-                    doc.body,
-                    doc.querySelector('[data-testid="stAppViewContainer"]'),
-                    doc.querySelector('[data-testid="stMain"]'),
-                    doc.querySelector('section.main'),
-                    doc.querySelector('.main'),
-                    doc.querySelector('.stApp')
+                const candidates = [];
+
+                if (doc.scrollingElement) candidates.push(doc.scrollingElement);
+                if (doc.documentElement) candidates.push(doc.documentElement);
+                if (doc.body) candidates.push(doc.body);
+
+                const selectors = [
+                    '[data-testid="stAppViewContainer"]',
+                    '[data-testid="stMain"]',
+                    'section[data-testid="stMain"]',
+                    'section.main',
+                    '.main',
+                    '.stApp',
+                    'main'
                 ];
 
-                for (const candidate of candidates) {{
-                    if (!candidate) continue;
+                selectors.forEach(function(selector) {{
+                    doc.querySelectorAll(selector).forEach(function(element) {{
+                        candidates.push(element);
+                    }});
+                }});
 
-                    if (candidate === parentWindow) {{
-                        return candidate;
-                    }}
+                let bestElement = null;
+                let bestScrollableHeight = 0;
 
-                    const hasScrollableContent =
-                        candidate.scrollHeight > candidate.clientHeight;
+                candidates.forEach(function(element) {{
+                    if (!element) return;
 
-                    if (hasScrollableContent) {{
-                        return candidate;
-                    }}
-                }}
+                    try {{
+                        const scrollableHeight = element.scrollHeight - element.clientHeight;
 
-                return parentWindow;
+                        if (scrollableHeight > bestScrollableHeight) {{
+                            bestScrollableHeight = scrollableHeight;
+                            bestElement = element;
+                        }}
+                    }} catch (error) {{}}
+                }});
+
+                return bestElement || doc.scrollingElement || doc.documentElement || doc.body;
             }}
 
-            function executeScroll() {{
-                const target = findScrollableElement();
-                const doc = window.parent.document;
+            function executePreciseScroll() {{
+                const target = findBestScrollableElement();
 
-                try {{
-                    if (direction === "down") {{
-                        target.scrollBy({{
-                            top: amount,
-                            behavior: "smooth"
-                        }});
-                    }}
+                if (!target) return;
 
-                    if (direction === "up") {{
-                        target.scrollBy({{
-                            top: -amount,
-                            behavior: "smooth"
-                        }});
-                    }}
+                if (direction === "down") {{
+                    target.scrollBy({{
+                        top: amount,
+                        behavior: "smooth"
+                    }});
+                }}
 
-                    if (direction === "top") {{
-                        target.scrollTo({{
-                            top: 0,
-                            behavior: "smooth"
-                        }});
-                    }}
+                if (direction === "up") {{
+                    target.scrollBy({{
+                        top: -amount,
+                        behavior: "smooth"
+                    }});
+                }}
 
-                    if (direction === "bottom") {{
-                        const maxHeight =
-                            doc.body.scrollHeight ||
-                            doc.documentElement.scrollHeight;
+                if (direction === "top") {{
+                    target.scrollTo({{
+                        top: 0,
+                        behavior: "smooth"
+                    }});
+                }}
 
-                        target.scrollTo({{
-                            top: maxHeight,
-                            behavior: "smooth"
-                        }});
-                    }}
-                }} catch (error) {{
-                    console.log("Scroll failed:", error);
-                    window.parent.scrollBy(0, direction === "up" ? -amount : amount);
+                if (direction === "bottom") {{
+                    target.scrollTo({{
+                        top: target.scrollHeight,
+                        behavior: "smooth"
+                    }});
                 }}
             }}
 
-            setTimeout(executeScroll, 500);
-            </script>
-            """,
-            height=0
-        )
+            setTimeout(executePreciseScroll, 300);
+        }})();
+        </script>
+        """,
+        height=0
+    )
 
     st.session_state.pending_scroll_direction = None
 
@@ -438,7 +445,7 @@ def main():
     else:
         render_resume_page(df)
 
-    render_pending_scroll_action(scroll_placeholder)
+    render_pending_scroll_action()
 
 if __name__ == "__main__":
     main()

@@ -145,7 +145,57 @@ class CommandParser:
         return None
 
     def parse_scroll_command(self, text: str) -> dict | None:
-        scroll_down_phrases = [
+        small_amount = 300
+        normal_amount = 650
+        large_amount = 1100
+
+        go_top_phrases = [
+            "retourne en haut",
+            "tout en haut",
+            "haut de page",
+            "reviens en haut"
+        ]
+
+        go_bottom_phrases = [
+            "tout en bas",
+            "bas de page",
+            "va tout en bas"
+        ]
+
+        scroll_down_small_phrases = [
+            "descends un peu",
+            "descend un peu",
+            "un peu plus bas",
+            "legerement plus bas",
+            "légèrement plus bas"
+        ]
+
+        scroll_up_small_phrases = [
+            "monte un peu",
+            "remonte un peu",
+            "un peu plus haut",
+            "legerement plus haut",
+            "légèrement plus haut"
+        ]
+
+        scroll_down_large_phrases = [
+            "descends beaucoup",
+            "descend beaucoup",
+            "beaucoup plus bas",
+            "descends plus vite",
+            "page suivante"
+        ]
+
+        scroll_up_large_phrases = [
+            "monte beaucoup",
+            "remonte beaucoup",
+            "beaucoup plus haut",
+            "monte plus vite",
+            "page precedente",
+            "page précédente"
+        ]
+
+        scroll_down_normal_phrases = [
             "descends",
             "descend",
             "descendre",
@@ -153,11 +203,10 @@ class CommandParser:
             "defile vers le bas",
             "défile vers le bas",
             "va en bas",
-            "plus bas",
-            "page suivante"
+            "plus bas"
         ]
 
-        scroll_up_phrases = [
+        scroll_up_normal_phrases = [
             "monte",
             "remonte",
             "remonter",
@@ -165,20 +214,7 @@ class CommandParser:
             "defile vers le haut",
             "défile vers le haut",
             "va en haut",
-            "plus haut",
-            "page precedente",
-            "page précédente"
-        ]
-
-        go_top_phrases = [
-            "retourne en haut",
-            "tout en haut",
-            "haut de page"
-        ]
-
-        go_bottom_phrases = [
-            "tout en bas",
-            "bas de page"
+            "plus haut"
         ]
 
         for phrase in go_top_phrases:
@@ -186,6 +222,7 @@ class CommandParser:
                 return {
                     "intent": "scroll",
                     "direction": "top",
+                    "amount": 0,
                     "raw_text": text
                 }
 
@@ -194,28 +231,65 @@ class CommandParser:
                 return {
                     "intent": "scroll",
                     "direction": "bottom",
+                    "amount": 0,
                     "raw_text": text
                 }
 
-        for phrase in scroll_down_phrases:
+        for phrase in scroll_down_small_phrases:
             if self.normalize(phrase) in text:
                 return {
                     "intent": "scroll",
                     "direction": "down",
-                    "amount": 1200,
+                    "amount": small_amount,
                     "raw_text": text
                 }
 
-        for phrase in scroll_up_phrases:
+        for phrase in scroll_up_small_phrases:
             if self.normalize(phrase) in text:
                 return {
                     "intent": "scroll",
                     "direction": "up",
-                    "amount": 1200,
+                    "amount": small_amount,
                     "raw_text": text
                 }
 
-        return None
+        for phrase in scroll_down_large_phrases:
+            if self.normalize(phrase) in text:
+                return {
+                    "intent": "scroll",
+                    "direction": "down",
+                    "amount": large_amount,
+                    "raw_text": text
+                }
+
+        for phrase in scroll_up_large_phrases:
+            if self.normalize(phrase) in text:
+                return {
+                    "intent": "scroll",
+                    "direction": "up",
+                    "amount": large_amount,
+                    "raw_text": text
+                }
+
+        for phrase in scroll_down_normal_phrases:
+            if self.normalize(phrase) in text:
+                return {
+                    "intent": "scroll",
+                    "direction": "down",
+                    "amount": normal_amount,
+                    "raw_text": text
+                }
+
+        for phrase in scroll_up_normal_phrases:
+            if self.normalize(phrase) in text:
+                return {
+                    "intent": "scroll",
+                    "direction": "up",
+                    "amount": normal_amount,
+                    "raw_text": text
+                }
+
+        return None 
 
     def parse(self, transcription: str) -> dict:
         text = self.normalize(transcription)

@@ -15,6 +15,7 @@ def initialize_dashboard_state(st):
         "last_transcription": None,
         "pending_scroll_direction": None,
         "pending_scroll_amount": 700,
+        "scroll_action_id": 0,
         "status_message": "Aucune commande exécutée pour le moment."
     }
 
@@ -70,6 +71,7 @@ def apply_dashboard_command(st, command: dict):
 
         st.session_state.pending_scroll_direction = direction
         st.session_state.pending_scroll_amount = amount
+        st.session_state.scroll_action_id += 1
 
         if direction == "down":
             st.session_state.status_message = "Défilement vers le bas."

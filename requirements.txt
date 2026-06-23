@@ -5,5 +5,4 @@ pandas
 sounddevice
 soundfile
 streamlit-autorefresh
-runtime/
-*.tmp
+streamlit-javascript
