@@ -13,6 +13,8 @@ def initialize_dashboard_state(st):
         "last_event_id": None,
         "last_wake_result": None,
         "last_transcription": None,
+        "pending_scroll_direction": None,
+        "pending_scroll_amount": 700,
         "status_message": "Aucune commande exécutée pour le moment."
     }
 
@@ -58,12 +60,33 @@ def apply_dashboard_command(st, command: dict):
         st.session_state.selected_metric = None
         st.session_state.selected_dimension = None
         st.session_state.current_page = "resume"
+        st.session_state.pending_scroll_direction = None
+        st.session_state.pending_scroll_amount = 700
         st.session_state.status_message = "Filtres réinitialisés."
+
+    elif intent == "scroll":
+        direction = command.get("direction")
+        amount = command.get("amount", 700)
+
+        st.session_state.pending_scroll_direction = direction
+        st.session_state.pending_scroll_amount = amount
+
+        if direction == "down":
+            st.session_state.status_message = "Défilement vers le bas."
+        elif direction == "up":
+            st.session_state.status_message = "Défilement vers le haut."
+        elif direction == "top":
+            st.session_state.status_message = "Retour en haut de page."
+        elif direction == "bottom":
+            st.session_state.status_message = "Défilement vers le bas de page."
+        else:
+            st.session_state.status_message = "Direction de scroll non reconnue."
 
     else:
         st.session_state.status_message = (
             "Commande non reconnue. Essayez par exemple : "
-            "'Va à la page ventes' ou 'Affiche les ventes par région'."
+            "'Va à la page ventes', 'Affiche les ventes par région', "
+            "'Descends' ou 'Monte'."
         )
 
 

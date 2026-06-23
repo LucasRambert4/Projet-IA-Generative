@@ -14,41 +14,115 @@ class CommandParser:
 
     def __init__(self):
         self.pages = {
-            "ventes": ["vente", "ventes", "zente", "zentes", "evente", "evenement"],
-            "clients": ["client", "clients", "utilisateur", "utilisateurs"],
-            "regions": ["region", "regions", "région", "régions"],
-            "resume": ["resume", "résumé", "synthese", "synthèse"]
+            "ventes": [
+                "vente",
+                "ventes",
+                "zente",
+                "zentes",
+                "evente",
+                "evenement"
+            ],
+            "clients": [
+                "client",
+                "clients",
+                "utilisateur",
+                "utilisateurs"
+            ],
+            "regions": [
+                "region",
+                "regions",
+                "région",
+                "régions"
+            ],
+            "resume": [
+                "resume",
+                "résumé",
+                "synthese",
+                "synthèse"
+            ]
         }
 
         self.metrics = {
-            "chiffre_affaires": ["chiffre affaires", "chiffre d affaires", "ca", "revenu", "revenus"],
-            "ventes": ["vente", "ventes", "zente", "evente"],
-            "clients": ["client", "clients", "utilisateurs"],
+            "chiffre_affaires": [
+                "chiffre affaires",
+                "chiffre d affaires",
+                "ca",
+                "revenu",
+                "revenus"
+            ],
+            "ventes": [
+                "vente",
+                "ventes",
+                "zente",
+                "zentes",
+                "evente",
+                "évente"
+            ],
+            "clients": [
+                "client",
+                "clients",
+                "utilisateurs",
+                "utilisateur"
+            ],
         }
 
         self.dimensions = {
-            "region": ["region", "regions", "région", "régions"],
-            "mois": ["mois", "mensuel", "janvier", "fevrier", "février", "mars"],
-            "produit": ["produit", "produits", "article", "articles"]
+            "region": [
+                "region",
+                "regions",
+                "région",
+                "régions"
+            ],
+            "mois": [
+                "mois",
+                "mensuel",
+                "janvier",
+                "fevrier",
+                "février",
+                "mars"
+            ],
+            "produit": [
+                "produit",
+                "produits",
+                "article",
+                "articles"
+            ]
         }
 
     def normalize(self, text: str) -> str:
         text = text.lower().strip()
 
         text = unicodedata.normalize("NFD", text)
-        text = "".join(char for char in text if unicodedata.category(char) != "Mn")
+        text = "".join(
+            char for char in text
+            if unicodedata.category(char) != "Mn"
+        )
 
-        text = text.replace("'", " ")
-        text = text.replace("-", " ")
-        text = text.replace(".", "")
-        text = text.replace(",", "")
+        replacements = {
+            "'": " ",
+            "-": " ",
+            ".": "",
+            ",": "",
+            "?": "",
+            "!": "",
+            ":": "",
+            ";": ""
+        }
 
-        return text
+        for old, new in replacements.items():
+            text = text.replace(old, new)
+
+        return " ".join(text.split())
 
     def similarity(self, word_a: str, word_b: str) -> float:
         return SequenceMatcher(None, word_a, word_b).ratio()
 
-    def contains_or_similar(self, text: str, aliases: list[str], threshold: float = 0.72) -> bool:
+    def contains_or_similar(
+        self,
+        text: str,
+        aliases: list[str],
+        threshold: float = 0.72
+    ) -> bool:
         words = text.split()
 
         for alias in aliases:
@@ -70,16 +144,113 @@ class CommandParser:
 
         return None
 
+    def parse_scroll_command(self, text: str) -> dict | None:
+        scroll_down_phrases = [
+            "descends",
+            "descend",
+            "descendre",
+            "scroll down",
+            "defile vers le bas",
+            "défile vers le bas",
+            "va en bas",
+            "plus bas",
+            "page suivante"
+        ]
+
+        scroll_up_phrases = [
+            "monte",
+            "remonte",
+            "remonter",
+            "scroll up",
+            "defile vers le haut",
+            "défile vers le haut",
+            "va en haut",
+            "plus haut",
+            "page precedente",
+            "page précédente"
+        ]
+
+        go_top_phrases = [
+            "retourne en haut",
+            "tout en haut",
+            "haut de page"
+        ]
+
+        go_bottom_phrases = [
+            "tout en bas",
+            "bas de page"
+        ]
+
+        for phrase in go_top_phrases:
+            if self.normalize(phrase) in text:
+                return {
+                    "intent": "scroll",
+                    "direction": "top",
+                    "raw_text": text
+                }
+
+        for phrase in go_bottom_phrases:
+            if self.normalize(phrase) in text:
+                return {
+                    "intent": "scroll",
+                    "direction": "bottom",
+                    "raw_text": text
+                }
+
+        for phrase in scroll_down_phrases:
+            if self.normalize(phrase) in text:
+                return {
+                    "intent": "scroll",
+                    "direction": "down",
+                    "amount": 1200,
+                    "raw_text": text
+                }
+
+        for phrase in scroll_up_phrases:
+            if self.normalize(phrase) in text:
+                return {
+                    "intent": "scroll",
+                    "direction": "up",
+                    "amount": 1200,
+                    "raw_text": text
+                }
+
+        return None
+
     def parse(self, transcription: str) -> dict:
         text = self.normalize(transcription)
 
-        if any(word in text for word in ["reset", "reinitialise", "réinitialise", "efface", "supprime les filtres"]):
+        scroll_command = self.parse_scroll_command(text)
+
+        if scroll_command:
+            scroll_command["raw_text"] = transcription
+            return scroll_command
+
+        reset_phrases = [
+            "reset",
+            "reinitialise",
+            "reinitialiser",
+            "reinitialise les filtres",
+            "efface",
+            "efface les filtres",
+            "supprime les filtres"
+        ]
+
+        if any(self.normalize(phrase) in text for phrase in reset_phrases):
             return {
                 "intent": "reset_filters",
                 "raw_text": transcription
             }
 
-        if any(word in text for word in ["va", "aller", "ouvre", "affiche la page", "page"]):
+        navigation_phrases = [
+            "va",
+            "aller",
+            "ouvre",
+            "affiche la page",
+            "page"
+        ]
+
+        if any(self.normalize(phrase) in text for phrase in navigation_phrases):
             page = self.find_match(text, self.pages)
 
             if page:
@@ -89,7 +260,14 @@ class CommandParser:
                     "raw_text": transcription
                 }
 
-        if any(word in text for word in ["affiche", "montre", "visualise", "voir"]):
+        chart_phrases = [
+            "affiche",
+            "montre",
+            "visualise",
+            "voir"
+        ]
+
+        if any(self.normalize(phrase) in text for phrase in chart_phrases):
             metric = self.find_match(text, self.metrics)
             dimension = self.find_match(text, self.dimensions)
 

@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
+import streamlit.components.v1 as components
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -259,8 +260,141 @@ def render_regions_page(df):
     st.dataframe(grouped_df, use_container_width=True)
 
 
+def process_external_voice_command():
+    """
+    Reads commands detected by the continuous voice listener
+    and applies them to the Streamlit dashboard.
+    """
+
+    event = read_latest_command_event()
+
+    if event is None:
+        return
+
+    event_id = event.get("id")
+
+    if st.session_state.get("last_event_id") == event_id:
+        return
+
+    st.session_state.last_event_id = event_id
+    st.session_state.last_transcription = event.get("transcription")
+    st.session_state.last_wake_result = event.get("wake_result")
+
+    parsed_command = event.get("parsed_command", {})
+    apply_dashboard_command(st, parsed_command)
+
+
+def render_pending_scroll_action(scroll_placeholder):
+    """
+    Executes a pending scroll action in the browser.
+
+    The JavaScript is rendered inside a placeholder placed near the top
+    of the Streamlit app, but filled after the page content is rendered.
+    This makes the scroll more reliable.
+    """
+
+    direction = st.session_state.get("pending_scroll_direction")
+    amount = st.session_state.get("pending_scroll_amount", 700)
+
+    if not direction:
+        return
+
+    with scroll_placeholder:
+        components.html(
+            f"""
+            <script>
+            const direction = "{direction}";
+            const amount = {amount};
+
+            function findScrollableElement() {{
+                const parentWindow = window.parent;
+                const doc = parentWindow.document;
+
+                const candidates = [
+                    parentWindow,
+                    doc.scrollingElement,
+                    doc.documentElement,
+                    doc.body,
+                    doc.querySelector('[data-testid="stAppViewContainer"]'),
+                    doc.querySelector('[data-testid="stMain"]'),
+                    doc.querySelector('section.main'),
+                    doc.querySelector('.main'),
+                    doc.querySelector('.stApp')
+                ];
+
+                for (const candidate of candidates) {{
+                    if (!candidate) continue;
+
+                    if (candidate === parentWindow) {{
+                        return candidate;
+                    }}
+
+                    const hasScrollableContent =
+                        candidate.scrollHeight > candidate.clientHeight;
+
+                    if (hasScrollableContent) {{
+                        return candidate;
+                    }}
+                }}
+
+                return parentWindow;
+            }}
+
+            function executeScroll() {{
+                const target = findScrollableElement();
+                const doc = window.parent.document;
+
+                try {{
+                    if (direction === "down") {{
+                        target.scrollBy({{
+                            top: amount,
+                            behavior: "smooth"
+                        }});
+                    }}
+
+                    if (direction === "up") {{
+                        target.scrollBy({{
+                            top: -amount,
+                            behavior: "smooth"
+                        }});
+                    }}
+
+                    if (direction === "top") {{
+                        target.scrollTo({{
+                            top: 0,
+                            behavior: "smooth"
+                        }});
+                    }}
+
+                    if (direction === "bottom") {{
+                        const maxHeight =
+                            doc.body.scrollHeight ||
+                            doc.documentElement.scrollHeight;
+
+                        target.scrollTo({{
+                            top: maxHeight,
+                            behavior: "smooth"
+                        }});
+                    }}
+                }} catch (error) {{
+                    console.log("Scroll failed:", error);
+                    window.parent.scrollBy(0, direction === "up" ? -amount : amount);
+                }}
+            }}
+
+            setTimeout(executeScroll, 500);
+            </script>
+            """,
+            height=0
+        )
+
+    st.session_state.pending_scroll_direction = None
+
+
 def main():
     initialize_dashboard_state(st)
+    
+    scroll_placeholder = st.empty()
 
     df = load_demo_data()
 
@@ -275,6 +409,7 @@ def main():
     )
 
     process_external_voice_command()
+  
 
     df = load_demo_data()
 
@@ -303,29 +438,7 @@ def main():
     else:
         render_resume_page(df)
 
-def process_external_voice_command():
-    """
-    Reads commands detected by the continuous voice listener
-    and applies them to the Streamlit dashboard.
-    """
-
-    event = read_latest_command_event()
-
-    if event is None:
-        return
-
-    event_id = event.get("id")
-
-    if st.session_state.get("last_event_id") == event_id:
-        return
-
-    st.session_state.last_event_id = event_id
-    st.session_state.last_transcription = event.get("transcription")
-    st.session_state.last_wake_result = event.get("wake_result")
-
-    parsed_command = event.get("parsed_command", {})
-    apply_dashboard_command(st, parsed_command)
-
+    render_pending_scroll_action(scroll_placeholder)
 
 if __name__ == "__main__":
     main()

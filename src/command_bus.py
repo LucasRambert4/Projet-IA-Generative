@@ -57,3 +57,4 @@ def read_latest_command_event() -> dict | None:
         )
     except json.JSONDecodeError:
         return None
+    
