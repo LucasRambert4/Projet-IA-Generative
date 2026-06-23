@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -12,6 +13,9 @@ if str(SRC_DIR) not in sys.path:
     sys.path.append(str(SRC_DIR))
 
 from command_parser import CommandParser
+from streamlit_autorefresh import st_autorefresh
+from command_bus import read_latest_command_event
+from wake_word import WakeWordDetector
 from stt_engine import LocalSTTEngine
 from audio_utils import save_uploaded_audio_to_temp_file, delete_temp_file
 from dashboard_controller import (
@@ -82,15 +86,18 @@ def render_sidebar():
     st.sidebar.write(f"Métrique : `{st.session_state.selected_metric}`")
     st.sidebar.write(f"Dimension : `{st.session_state.selected_dimension}`")
 
-
 def render_voice_command_area():
-    st.subheader("Commande vocale")
+    st.subheader("Commande vocale avec mot déclencheur")
 
     st.write(
-        "Enregistrez une commande vocale ou utilisez le champ texte pour tester rapidement."
+        "Dites une commande qui commence par **Ok Jack**. "
+        "Exemple : **Ok Jack, affiche les ventes par région**."
     )
 
     tab_audio, tab_text = st.tabs(["Micro", "Texte manuel"])
+
+    wake_detector = WakeWordDetector()
+    parser = CommandParser()
 
     with tab_audio:
         audio_value = st.audio_input("Enregistrer une commande vocale")
@@ -120,10 +127,17 @@ def render_voice_command_area():
 
                     st.session_state.last_transcription = transcription
 
-                    parser = CommandParser()
-                    parsed_command = parser.parse(transcription)
+                    wake_result = wake_detector.extract_command(transcription)
+                    st.session_state.last_wake_result = wake_result
 
-                    apply_dashboard_command(st, parsed_command)
+                    if not wake_result["activated"]:
+                        st.session_state.status_message = (
+                            "Commande ignorée : le mot déclencheur 'Ok Jack' n'a pas été détecté."
+                        )
+                    else:
+                        command_text = wake_result["command_text"]
+                        parsed_command = parser.parse(command_text)
+                        apply_dashboard_command(st, parsed_command)
 
                 finally:
                     delete_temp_file(temp_audio_path)
@@ -131,7 +145,7 @@ def render_voice_command_area():
     with tab_text:
         command_text = st.text_input(
             "Commande",
-            placeholder="Exemple : Affiche les ventes par région"
+            placeholder="Exemple : Ok Jack, affiche les ventes par région"
         )
 
         execute_text = st.button(
@@ -140,18 +154,32 @@ def render_voice_command_area():
         )
 
         if execute_text:
-            parser = CommandParser()
-            parsed_command = parser.parse(command_text)
-            apply_dashboard_command(st, parsed_command)
+            wake_result = wake_detector.extract_command(command_text)
+            st.session_state.last_wake_result = wake_result
+            st.session_state.last_transcription = command_text
+
+            if not wake_result["activated"]:
+                st.session_state.status_message = (
+                    "Commande ignorée : le mot déclencheur 'Ok Jack' n'a pas été détecté."
+                )
+            else:
+                cleaned_command = wake_result["command_text"]
+                parsed_command = parser.parse(cleaned_command)
+                apply_dashboard_command(st, parsed_command)
 
     if "last_transcription" in st.session_state:
         st.success(f"Dernière transcription : {st.session_state.last_transcription}")
+
+    if "last_wake_result" in st.session_state:
+        with st.expander("Voir la détection du mot déclencheur"):
+            st.json(st.session_state.last_wake_result)
 
     st.info(st.session_state.status_message)
 
     if st.session_state.last_command:
         with st.expander("Voir la commande interprétée"):
             st.json(st.session_state.last_command)
+
 
 def render_resume_page(df):
     st.header("Résumé du dashboard")
@@ -241,6 +269,15 @@ def main():
         "Prototype local : Whisper/faster-whisper pour le STT, puis interprétation de commandes pour naviguer dans le dashboard."
     )
 
+    st_autorefresh(
+        interval=1000,
+        key="voice_listener_refresh"
+    )
+
+    process_external_voice_command()
+
+    df = load_demo_data()
+
     render_sidebar()
     render_voice_command_area()
 
@@ -265,6 +302,29 @@ def main():
 
     else:
         render_resume_page(df)
+
+def process_external_voice_command():
+    """
+    Reads commands detected by the continuous voice listener
+    and applies them to the Streamlit dashboard.
+    """
+
+    event = read_latest_command_event()
+
+    if event is None:
+        return
+
+    event_id = event.get("id")
+
+    if st.session_state.get("last_event_id") == event_id:
+        return
+
+    st.session_state.last_event_id = event_id
+    st.session_state.last_transcription = event.get("transcription")
+    st.session_state.last_wake_result = event.get("wake_result")
+
+    parsed_command = event.get("parsed_command", {})
+    apply_dashboard_command(st, parsed_command)
 
 
 if __name__ == "__main__":

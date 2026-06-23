@@ -2,3 +2,8 @@ faster-whisper
 streamlit
 numpy
 pandas
+sounddevice
+soundfile
+streamlit-autorefresh
+runtime/
+*.tmp

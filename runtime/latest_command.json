@@ -1,0 +1,15 @@
+{
+  "id": "1782205663672112600",
+  "timestamp": "2026-06-23 11:07:43",
+  "transcription": "Ok Jacques, réinitialise les filtres.",
+  "wake_result": {
+    "activated": true,
+    "wake_word": "ok jacques",
+    "command_text": "reinitialise les filtres",
+    "original_text": "Ok Jacques, réinitialise les filtres."
+  },
+  "parsed_command": {
+    "intent": "reset_filters",
+    "raw_text": "reinitialise les filtres"
+  }
+}

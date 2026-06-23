@@ -10,6 +10,9 @@ def initialize_dashboard_state(st):
         "selected_metric": None,
         "selected_dimension": None,
         "last_command": None,
+        "last_event_id": None,
+        "last_wake_result": None,
+        "last_transcription": None,
         "status_message": "Aucune commande exécutée pour le moment."
     }
 
