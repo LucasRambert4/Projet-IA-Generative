@@ -1,15 +1,17 @@
 {
-  "id": "1782207195612423700",
-  "timestamp": "2026-06-23 11:33:15",
-  "transcription": "Ok Jacques, réinitialisez les filtres.",
+  "id": "1782290247264955500",
+  "timestamp": "2026-06-24 10:37:27",
+  "transcription": "Ok Jack, scroll down.",
   "wake_result": {
     "activated": true,
-    "wake_word": "ok jacques",
-    "command_text": "reinitialisez les filtres",
-    "original_text": "Ok Jacques, réinitialisez les filtres."
+    "wake_word": "ok jack",
+    "command_text": "scroll down",
+    "original_text": "Ok Jack, scroll down."
   },
   "parsed_command": {
-    "intent": "reset_filters",
-    "raw_text": "reinitialisez les filtres"
+    "intent": "scroll",
+    "direction": "down",
+    "amount": 650,
+    "raw_text": "scroll down"
   }
 }
