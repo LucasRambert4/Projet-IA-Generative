@@ -24,7 +24,7 @@ TEMP_AUDIO_FILE = RUNTIME_DIR / "listener_phrase.wav"
 
 FIXED_INPUT_DEVICE = 1
 FIXED_SAMPLE_RATE = 44100
-FIXED_SPEECH_THRESHOLD = 0.008
+FIXED_SPEECH_THRESHOLD = 0.0065
 
 
 # ==========================================================
@@ -32,6 +32,7 @@ FIXED_SPEECH_THRESHOLD = 0.008
 # ==========================================================
 
 FRAME_DURATION_SECONDS = 0.25
+START_SPEECH_FRAMES = 3
 END_SILENCE_SECONDS = 0.9
 MIN_SPEECH_SECONDS = 0.7
 MAX_UTTERANCE_SECONDS = 8
@@ -51,8 +52,8 @@ class PersistentMicrophone:
     """
     Keeps the microphone stream open permanently.
 
-    We use int16 for better Windows/Realtek compatibility,
-    then convert audio to float32 internally.
+    This avoids the Windows/Realtek issue where the mic only works properly
+    when another app, like a screen recorder, keeps it active.
     """
 
     def __init__(self, input_device: int, sample_rate: int):
@@ -65,7 +66,6 @@ class PersistentMicrophone:
         if status:
             print_terminal("AUDIO WARNING", str(status))
 
-        # Convert int16 audio to float32 between -1 and 1.
         audio_float = indata.astype(np.float32) / 32768.0
         self.audio_queue.put(audio_float.copy())
 
@@ -85,6 +85,13 @@ class PersistentMicrophone:
         if self.stream is not None:
             self.stream.stop()
             self.stream.close()
+
+    def clear_queue(self):
+        while not self.audio_queue.empty():
+            try:
+                self.audio_queue.get_nowait()
+            except queue.Empty:
+                break
 
     def read_frame(self) -> tuple[np.ndarray, float]:
         frame = self.audio_queue.get()
@@ -116,12 +123,15 @@ def record_full_phrase(
 
     RUNTIME_DIR.mkdir(exist_ok=True)
 
+    microphone.clear_queue()
+
     frames = []
     is_recording = False
     silence_duration = 0.0
     speech_duration = 0.0
     max_energy = 0.0
     start_time = None
+    above_threshold_frames = 0
 
     while True:
         frame, energy = microphone.read_frame()
@@ -135,6 +145,11 @@ def record_full_phrase(
             )
 
             if energy >= speech_threshold:
+                above_threshold_frames += 1
+            else:
+                above_threshold_frames = 0
+
+            if above_threshold_frames >= START_SPEECH_FRAMES:
                 is_recording = True
                 start_time = time.time()
                 frames.append(frame)
@@ -183,59 +198,148 @@ def record_full_phrase(
     return str(TEMP_AUDIO_FILE), speech_duration, max_energy
 
 
+def send_command_to_dashboard(
+    transcription: str,
+    wake_result: dict,
+    parsed_command: dict
+):
+    write_command_event(
+        transcription=transcription,
+        wake_result=wake_result,
+        parsed_command=parsed_command,
+    )
+
+    print_terminal("COMMAND", str(parsed_command))
+    print()
+
+
 def process_transcription(
     transcription: str,
     wake_detector: WakeWordDetector,
     parser: CommandParser,
     waiting_for_follow_up_command: bool,
-) -> bool:
+    chatbot_mode: bool,
+) -> tuple[bool, bool]:
+    """
+    Processes a transcription.
+
+    Important behavior:
+    - Normal commands require the wake word.
+    - "Ok Jack, chatbot" opens temporary chatbot mode.
+    - In chatbot mode, the next phrase is sent to Ollama.
+    - After one chatbot message, chatbot mode stops automatically.
+    - "chatbot désactivé" or "ferme chatbot" closes the chatbot.
+    """
+
     transcription = transcription.strip()
 
     if not transcription:
         print_terminal("TEXT", "Transcription vide.")
         print()
-        return waiting_for_follow_up_command
+        return waiting_for_follow_up_command, chatbot_mode
 
     print_terminal("TEXT", transcription)
 
     wake_result = wake_detector.extract_command(transcription)
+
+    # ==========================================================
+    # CASE 1: WAKE WORD DETECTED
+    # ==========================================================
 
     if wake_result["activated"]:
         command_text = wake_result["command_text"]
 
         print_terminal("WAKE", "Ok Jack détecté.")
 
-        if command_text:
-            parsed_command = parser.parse(command_text)
-
-            write_command_event(
-                transcription=transcription,
-                wake_result=wake_result,
-                parsed_command=parsed_command,
+        if not command_text:
+            print_terminal(
+                "SESSION",
+                f"Ok Jack détecté. En attente de la commande pendant {FOLLOW_UP_SECONDS}s."
             )
-
-            print_terminal("COMMAND", command_text)
-            print_terminal("PARSED", str(parsed_command))
             print()
+            return True, chatbot_mode
 
-            return False
+        parsed_command = parser.parse(command_text)
+        intent = parsed_command.get("intent")
 
-        print_terminal(
-            "SESSION",
-            f"Ok Jack détecté. En attente de la commande pendant {FOLLOW_UP_SECONDS}s."
-        )
-        print()
+        if intent == "open_chatbot":
+            chatbot_mode = True
+            send_command_to_dashboard(transcription, wake_result, parsed_command)
+            print_terminal("CHATBOT", "Mode chatbot activé pour la prochaine phrase.")
+            return False, chatbot_mode
 
-        return True
+        if intent == "chatbot_message":
+            # Direct command: "Ok Jack, chatbot explique les ventes"
+            send_command_to_dashboard(transcription, wake_result, parsed_command)
+            print_terminal("CHATBOT", "Message envoyé au chatbot.")
+            print_terminal("CHATBOT", "Mode chatbot arrêté après la commande.")
+            return False, False
+
+        if intent == "close_chatbot":
+            chatbot_mode = False
+            send_command_to_dashboard(transcription, wake_result, parsed_command)
+            print_terminal("CHATBOT", "Chatbot fermé.")
+            return False, chatbot_mode
+
+        send_command_to_dashboard(transcription, wake_result, parsed_command)
+        return False, chatbot_mode
+
+    # ==========================================================
+    # CASE 2: CHATBOT MODE ACTIVE
+    # ==========================================================
+
+    if chatbot_mode:
+        parsed_close_command = parser.parse(transcription)
+
+        if parsed_close_command.get("intent") == "close_chatbot":
+            wake_result = {
+                "activated": True,
+                "wake_word": "chatbot_mode",
+                "command_text": transcription,
+                "original_text": transcription,
+                "mode": "chatbot_close"
+            }
+
+            send_command_to_dashboard(transcription, wake_result, parsed_close_command)
+            print_terminal("CHATBOT", "Chatbot fermé.")
+            return False, False
+
+        parsed_command = {
+            "intent": "chatbot_message",
+            "message": transcription,
+            "raw_text": transcription
+        }
+
+        wake_result = {
+            "activated": True,
+            "wake_word": "chatbot_mode",
+            "command_text": transcription,
+            "original_text": transcription,
+            "mode": "chatbot_message"
+        }
+
+        send_command_to_dashboard(transcription, wake_result, parsed_command)
+
+        print_terminal("CHATBOT", "Message envoyé à Ollama.")
+        print_terminal("CHATBOT", "Mode chatbot arrêté automatiquement après la réponse.")
+
+        # IMPORTANT:
+        # The chatbot mode stops after one message.
+        return False, False
+
+    # ==========================================================
+    # CASE 3: FOLLOW-UP AFTER ONLY "OK JACK"
+    # ==========================================================
 
     if waiting_for_follow_up_command:
         parsed_command = parser.parse(transcription)
+        intent = parsed_command.get("intent")
 
-        if parsed_command.get("intent") == "unknown":
+        if intent == "unknown":
             print_terminal("FOLLOW-UP", transcription)
             print_terminal("ERROR", "Commande non reconnue, réessayez.")
             print()
-            return True
+            return True, chatbot_mode
 
         wake_result = {
             "activated": True,
@@ -245,23 +349,35 @@ def process_transcription(
             "mode": "follow_up_command",
         }
 
-        write_command_event(
-            transcription=transcription,
-            wake_result=wake_result,
-            parsed_command=parsed_command,
-        )
+        if intent == "open_chatbot":
+            chatbot_mode = True
+            send_command_to_dashboard(transcription, wake_result, parsed_command)
+            print_terminal("CHATBOT", "Mode chatbot activé pour la prochaine phrase.")
+            return False, chatbot_mode
 
-        print_terminal("FOLLOW-UP", "Commande reçue après Ok Jack.")
-        print_terminal("COMMAND", transcription)
-        print_terminal("PARSED", str(parsed_command))
-        print()
+        if intent == "chatbot_message":
+            send_command_to_dashboard(transcription, wake_result, parsed_command)
+            print_terminal("CHATBOT", "Message envoyé au chatbot.")
+            print_terminal("CHATBOT", "Mode chatbot arrêté après la commande.")
+            return False, False
 
-        return False
+        if intent == "close_chatbot":
+            chatbot_mode = False
+            send_command_to_dashboard(transcription, wake_result, parsed_command)
+            print_terminal("CHATBOT", "Chatbot fermé.")
+            return False, chatbot_mode
+
+        send_command_to_dashboard(transcription, wake_result, parsed_command)
+        return False, chatbot_mode
+
+    # ==========================================================
+    # CASE 4: NO WAKE WORD AND NO CHATBOT MODE
+    # ==========================================================
 
     print_terminal("IGNORED", "Pas de wake word, phrase ignorée.")
     print()
 
-    return waiting_for_follow_up_command
+    return waiting_for_follow_up_command, chatbot_mode
 
 
 def main():
@@ -290,6 +406,8 @@ def main():
     waiting_for_follow_up_command = False
     follow_up_deadline = 0.0
 
+    chatbot_mode = False
+
     microphone = PersistentMicrophone(
         input_device=input_device,
         sample_rate=sample_rate
@@ -302,7 +420,8 @@ def main():
     print_terminal("CONFIG", f"Sample rate: {sample_rate}")
     print_terminal("CONFIG", f"Speech threshold: {speech_threshold}")
     print_terminal("CONFIG", f"End silence: {END_SILENCE_SECONDS}s")
-    print_terminal("EXAMPLE", "Say: Ok Jack, affiche les ventes par région")
+    print_terminal("EXAMPLE", "Say: Ok Jack, chatbot")
+    print_terminal("EXAMPLE", "Then say: Explique les ventes par région")
     print_terminal("STOP", "Press CTRL + C to stop.")
     print()
 
@@ -338,15 +457,22 @@ def main():
 
             now = time.time()
 
-            waiting_for_follow_up_command = process_transcription(
-                transcription,
-                wake_detector,
-                parser,
-                waiting_for_follow_up_command,
+            waiting_for_follow_up_command, chatbot_mode = process_transcription(
+                transcription=transcription,
+                wake_detector=wake_detector,
+                parser=parser,
+                waiting_for_follow_up_command=waiting_for_follow_up_command,
+                chatbot_mode=chatbot_mode,
             )
 
             if waiting_for_follow_up_command:
                 follow_up_deadline = now + FOLLOW_UP_SECONDS
+
+            if chatbot_mode:
+                print_terminal("MODE", "Chatbot actif. Les prochaines phrases iront à Ollama.")
+            else:
+                print_terminal("MODE", "Mode commandes dashboard.")
+            print()
 
     except KeyboardInterrupt:
         print()

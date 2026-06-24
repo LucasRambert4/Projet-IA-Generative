@@ -6,3 +6,5 @@ sounddevice
 soundfile
 streamlit-autorefresh
 streamlit-javascript
+requests
+kokoro

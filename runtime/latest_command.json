@@ -1,17 +1,17 @@
 {
-  "id": "1782290247264955500",
-  "timestamp": "2026-06-24 10:37:27",
-  "transcription": "Ok Jack, scroll down.",
+  "event_id": "a48abd34-27c9-4349-b96b-1d13be7f1f97",
+  "created_at": 1782308110.7939749,
+  "transcription": "Moi, l'analyse des ventes.",
   "wake_result": {
     "activated": true,
-    "wake_word": "ok jack",
-    "command_text": "scroll down",
-    "original_text": "Ok Jack, scroll down."
+    "wake_word": "chatbot_mode",
+    "command_text": "Moi, l'analyse des ventes.",
+    "original_text": "Moi, l'analyse des ventes.",
+    "mode": "chatbot_message"
   },
   "parsed_command": {
-    "intent": "scroll",
-    "direction": "down",
-    "amount": 650,
-    "raw_text": "scroll down"
+    "intent": "chatbot_message",
+    "message": "Moi, l'analyse des ventes.",
+    "raw_text": "Moi, l'analyse des ventes."
   }
 }
