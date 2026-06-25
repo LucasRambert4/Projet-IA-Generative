@@ -29,7 +29,13 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 
-from src.command_bus import read_latest_command_event, read_listener_status
+from src.command_bus import (
+    read_latest_command_event,
+    read_listener_status,
+    write_listener_pause,
+    clear_listener_control,
+)
+
 from src.dashboard_controller import (
     initialize_dashboard_state,
     apply_dashboard_command,
@@ -45,9 +51,10 @@ except Exception:
 
 
 try:
-    from src.kokoro_tts_engine import synthesize_response_to_wav
+    from src.kokoro_tts_engine import synthesize_response_to_wav, play_wav_audio
 except Exception:
     synthesize_response_to_wav = None
+    play_wav_audio = None
 
 
 # ==========================================================
@@ -82,6 +89,15 @@ def get_tts_executor():
     return ThreadPoolExecutor(max_workers=1)
 
 
+@st.cache_resource
+def get_audio_playback_executor():
+    """
+    Creates one background worker for local Python audio playback.
+    """
+
+    return ThreadPoolExecutor(max_workers=1)
+
+
 # ==========================================================
 # SESSION STATE
 # ==========================================================
@@ -94,8 +110,26 @@ if "chatbot_open" not in st.session_state:
 if "chatbot_future" not in st.session_state:
     st.session_state.chatbot_future = None
 
+if "tts_audio_playing_until" not in st.session_state:
+    st.session_state.tts_audio_playing_until = 0.0
+
+if "tts_audio_playing_until" not in st.session_state:
+    st.session_state.tts_audio_playing_until = 0.0
+
+if "audio_playback_future" not in st.session_state:
+    st.session_state.audio_playback_future = None
+
+if "audio_playback_waiting" not in st.session_state:
+    st.session_state.audio_playback_waiting = False
+
+if "active_audio_playback_request_id" not in st.session_state:
+    st.session_state.active_audio_playback_request_id = None
+
 if "chatbot_waiting_response" not in st.session_state:
     st.session_state.chatbot_waiting_response = False
+
+if "tts_audio_playing_until" not in st.session_state:
+    st.session_state.tts_audio_playing_until = 0.0
 
 if "chatbot_pending_user_message" not in st.session_state:
     st.session_state.chatbot_pending_user_message = None
@@ -250,6 +284,81 @@ def is_listener_already_running() -> bool:
         return False
 
     return is_windows_process_running(pid)
+
+
+def call_audio_playback_in_background(
+    audio_path: str | None,
+    playback_request_id: str,
+) -> tuple[str, bool]:
+    """
+    Plays Kokoro audio from Python in a background thread.
+    """
+
+    if play_wav_audio is None:
+        return playback_request_id, False
+
+    try:
+        success = play_wav_audio(audio_path)
+        return playback_request_id, success
+
+    except Exception:
+        return playback_request_id, False
+
+
+def start_audio_playback(audio_path: str | None):
+    """
+    Starts local Python audio playback.
+
+    This avoids browser autoplay restrictions.
+    """
+
+    if not audio_path:
+        return
+
+    playback_request_id = f"playback_{int(time.time() * 1000)}"
+
+    st.session_state.active_audio_playback_request_id = playback_request_id
+    st.session_state.audio_playback_waiting = True
+
+    executor = get_audio_playback_executor()
+
+    st.session_state.audio_playback_future = executor.submit(
+        call_audio_playback_in_background,
+        audio_path,
+        playback_request_id,
+    )
+
+
+def check_audio_playback_response():
+    """
+    Checks whether local Python audio playback has finished.
+    """
+
+    future = st.session_state.get("audio_playback_future")
+
+    if future is None:
+        return
+
+    if not future.done():
+        return
+
+    try:
+        playback_request_id, success = future.result()
+    except Exception:
+        playback_request_id = None
+        success = False
+
+    st.session_state.audio_playback_future = None
+    st.session_state.audio_playback_waiting = False
+
+    if playback_request_id != st.session_state.get("active_audio_playback_request_id"):
+        return
+
+    if success:
+        st.session_state.status_message = "Lecture vocale terminée."
+    else:
+        st.session_state.status_message = "Audio généré, mais lecture locale impossible."
+
 
 
 def start_live_listener_if_needed() -> tuple[bool, str]:
@@ -681,6 +790,36 @@ def process_chatbot_message(user_message: str):
     st.session_state.chatbot_pending_user_message = user_message
     st.session_state.status_message = "Question envoyée au chatbot."
 
+def estimate_audio_duration_seconds(audio_path: str | None) -> float:
+    """
+    Estimates WAV duration.
+
+    This is used to pause the listener while Kokoro is speaking.
+    """
+
+    if not audio_path:
+        return 0.0
+
+    path = Path(audio_path)
+
+    if not path.exists():
+        return 0.0
+
+    try:
+        import wave
+
+        with wave.open(str(path), "rb") as wav_file:
+            frames = wav_file.getnframes()
+            rate = wav_file.getframerate()
+
+            if rate <= 0:
+                return 0.0
+
+            return frames / float(rate)
+
+    except Exception:
+        return 8.0
+
 
 def check_chatbot_background_response():
     """
@@ -752,10 +891,24 @@ def check_tts_background_response():
     st.session_state.last_tts_audio = audio_path
 
     if audio_path:
+        audio_duration = estimate_audio_duration_seconds(audio_path)
+        pause_duration = max(audio_duration + 2.0, 4.0)
+
+        st.session_state.last_tts_audio = audio_path
         st.session_state.last_tts_audio_event_id = tts_request_id
-        st.session_state.status_message = "Audio Kokoro généré."
+        st.session_state.tts_audio_playing_until = time.time() + pause_duration
+        st.session_state.status_message = "Audio Kokoro généré. Lecture vocale locale en cours."
+
+        write_listener_pause(
+            duration_seconds=pause_duration,
+            reason="kokoro_speaking",
+        )
+
+        start_audio_playback(audio_path)
+
     else:
         st.session_state.last_tts_audio_event_id = None
+        st.session_state.tts_audio_playing_until = 0.0
         st.session_state.status_message = "Réponse texte reçue, mais audio Kokoro indisponible."
 
 
@@ -778,6 +931,13 @@ def process_voice_command(command: dict):
         st.session_state.last_autoplayed_tts_audio_event_id = None
         st.session_state.active_tts_request_id = None
         st.session_state.tts_waiting_response = False
+        st.session_state.tts_audio_playing_until = 0.0
+        st.session_state.audio_playback_future = None
+        st.session_state.audio_playback_waiting = False
+        st.session_state.active_audio_playback_request_id = None
+
+        clear_listener_control()
+
         st.session_state.status_message = "Chatbot fermé."
         return
 
@@ -824,21 +984,21 @@ def get_audio_html(
     audio_event_id: str | None = None,
 ) -> str:
     """
-    Creates invisible autoplay audio.
+    Creates a hidden audio player for Kokoro.
 
-    The audio is embedded inside the chatbot HTML only when a new
-    TTS event must be played. No visible controls are displayed.
+    This must be rendered with components.html, not st.html,
+    otherwise JavaScript may not execute correctly.
     """
 
     if not audio_path:
         return ""
 
+    if not autoplay:
+        return ""
+
     path = Path(audio_path)
 
     if not path.exists():
-        return ""
-
-    if not autoplay:
         return ""
 
     try:
@@ -851,30 +1011,94 @@ def get_audio_html(
         safe_audio_id = escape(audio_event_id)
 
         return f"""
-        <audio
-            id="{safe_audio_id}"
-            autoplay
-            preload="auto"
-            style="display: none; width: 0; height: 0; opacity: 0; pointer-events: none;"
-        >
-            <source src="data:audio/wav;base64,{encoded_audio}" type="audio/wav">
-        </audio>
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0; padding:0; overflow:hidden;">
+            <audio
+                id="{safe_audio_id}"
+                autoplay
+                preload="auto"
+                style="
+                    position: fixed;
+                    left: -10000px;
+                    top: -10000px;
+                    width: 1px;
+                    height: 1px;
+                    opacity: 0;
+                    pointer-events: none;
+                "
+            >
+                <source src="data:audio/wav;base64,{encoded_audio}" type="audio/wav">
+            </audio>
 
-        <script>
-        setTimeout(function () {{
+            <script>
             const audio = document.getElementById("{safe_audio_id}");
-            if (audio) {{
+
+            function playKokoroAudio() {{
+                if (!audio) {{
+                    return;
+                }}
+
                 audio.currentTime = 0;
-                audio.play().catch(function(error) {{
-                    console.log("Autoplay blocked:", error);
-                }});
+                audio.volume = 1.0;
+
+                const playPromise = audio.play();
+
+                if (playPromise !== undefined) {{
+                    playPromise.catch(function(error) {{
+                        console.log("Kokoro autoplay blocked:", error);
+                    }});
+                }}
             }}
-        }}, 200);
-        </script>
+
+            setTimeout(playKokoroAudio, 100);
+            setTimeout(playKokoroAudio, 500);
+            setTimeout(playKokoroAudio, 1000);
+            </script>
+        </body>
+        </html>
         """
 
     except Exception:
         return ""
+
+
+def render_kokoro_audio_if_needed():
+    """
+    Renders Kokoro audio once, separately from the chatbot popup.
+
+    This prevents the chatbot popup from flickering when audio is injected.
+    """
+
+    if not st.session_state.get("voice_output_enabled"):
+        return
+
+    audio_event_id = st.session_state.get("last_tts_audio_event_id")
+    last_autoplayed_id = st.session_state.get("last_autoplayed_tts_audio_event_id")
+
+    should_autoplay = (
+        st.session_state.get("last_tts_audio")
+        and audio_event_id
+        and audio_event_id != last_autoplayed_id
+    )
+
+    if not should_autoplay:
+        return
+
+    audio_html = get_audio_html(
+        st.session_state.last_tts_audio,
+        autoplay=True,
+        audio_event_id=audio_event_id,
+    )
+
+    if audio_html:
+        components.html(
+            audio_html,
+            height=1,
+            scrolling=False,
+        )
+
+        st.session_state.last_autoplayed_tts_audio_event_id = audio_event_id
 
 
 def render_html(html_content: str):
@@ -887,6 +1111,42 @@ def render_html(html_content: str):
     else:
         st.markdown(html_content, unsafe_allow_html=True)
 
+def inject_no_fade_css():
+    """
+    Forces the Streamlit page and chatbot popup to stay visually stable
+    during reruns.
+    """
+
+    st.markdown(
+        """
+        <style>
+        .stApp,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"],
+        .main {
+            opacity: 1 !important;
+            filter: none !important;
+            transition: none !important;
+        }
+
+        [data-testid="stStatusWidget"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        .chatbot-popup,
+        .chatbot-popup *,
+        .chatbot-floating-button {
+            opacity: 1 !important;
+            filter: none !important;
+            backdrop-filter: none !important;
+            transition: none !important;
+            animation: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 def render_scroll_anchor(anchor_id: str):
     """
@@ -1077,6 +1337,7 @@ def render_chatbot_popup():
         overflow-y: auto;
         background: #f9fafb !important;
         opacity: 1 !important;
+        scroll-behavior: auto;
     }
 
     .message-row {
@@ -1213,23 +1474,7 @@ def render_chatbot_popup():
         </div>
         """
 
-    audio_event_id = st.session_state.get("last_tts_audio_event_id")
-    last_autoplayed_id = st.session_state.get("last_autoplayed_tts_audio_event_id")
-
-    should_autoplay = (
-        st.session_state.last_tts_audio
-        and audio_event_id
-        and audio_event_id != last_autoplayed_id
-    )
-
-    audio_html = get_audio_html(
-        st.session_state.last_tts_audio,
-        autoplay=bool(should_autoplay),
-        audio_event_id=audio_event_id,
-    )
-
-    if should_autoplay:
-        st.session_state.last_autoplayed_tts_audio_event_id = audio_event_id
+    
 
     ollama_status = (
         "Ollama actif"
@@ -1264,7 +1509,6 @@ def render_chatbot_popup():
 
         <div class="chatbot-messages" id="chatbot-messages-container">
             {messages_html}
-            {audio_html}
         </div>
 
         <div class="chatbot-footer">
@@ -1296,11 +1540,14 @@ if not st.session_state.listener_checked:
 read_and_process_latest_voice_event()
 check_chatbot_background_response()
 check_tts_background_response()
+check_audio_playback_response()
 
 
 # ==========================================================
 # UI
 # ==========================================================
+
+inject_no_fade_css()
 
 render_scroll_anchor("voice-scroll-top")
 
@@ -1480,11 +1727,6 @@ with st.expander("Debug vocal"):
 
 render_chatbot_popup()
 
-
-# ==========================================================
-# VOICE SCROLL
-# ==========================================================
-
 run_scroll_if_needed()
 
 
@@ -1492,7 +1734,22 @@ run_scroll_if_needed()
 # AUTO REFRESH
 # ==========================================================
 
+now = time.time()
+
+audio_is_playing = now < st.session_state.get("tts_audio_playing_until", 0.0)
+chatbot_is_open = st.session_state.get("chatbot_open", False)
+
+if audio_is_playing:
+    remaining_audio_time = st.session_state.tts_audio_playing_until - now
+    refresh_interval = int((remaining_audio_time + 1.0) * 1000)
+
+elif chatbot_is_open:
+    refresh_interval = 2500
+
+else:
+    refresh_interval = 1000
+
 st_autorefresh(
-    interval=1000,
+    interval=refresh_interval,
     key="voice_dashboard_autorefresh",
 )

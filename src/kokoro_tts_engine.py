@@ -10,7 +10,7 @@ KOKORO_LANG_CODE = "f"
 KOKORO_VOICE = "ff_siwis"
 KOKORO_SPEED = 1.08
 
-MAX_TTS_CHARACTERS = 320
+MAX_TTS_CHARACTERS = 1200
 
 _pipeline = None
 
@@ -18,8 +18,6 @@ _pipeline = None
 def get_pipeline():
     """
     Loads Kokoro only when TTS is actually needed.
-
-    This avoids slowing down Streamlit startup.
     """
 
     global _pipeline
@@ -38,9 +36,6 @@ def get_pipeline():
 def clean_text_for_tts(text: str) -> str:
     """
     Cleans assistant response before speech synthesis.
-
-    The text is intentionally shortened because long TTS generation is slow
-    and not useful for a voice dashboard demo.
     """
 
     if not text:
@@ -69,7 +64,6 @@ def clean_text_for_tts(text: str) -> str:
     shortened_text = cleaned_text[:MAX_TTS_CHARACTERS]
 
     sentence_endings = [".", "!", "?"]
-
     last_sentence_position = -1
 
     for ending in sentence_endings:
@@ -78,19 +72,15 @@ def clean_text_for_tts(text: str) -> str:
             shortened_text.rfind(ending),
         )
 
-    if last_sentence_position > 80:
-        shortened_text = shortened_text[:last_sentence_position + 1]
-    else:
-        shortened_text = shortened_text.rstrip() + "."
+    if last_sentence_position > 120:
+        return shortened_text[:last_sentence_position + 1]
 
-    return shortened_text
+    return shortened_text.rstrip() + "."
 
 
 def synthesize_response_to_wav(text: str) -> str | None:
     """
     Converts chatbot response text into a WAV file.
-
-    Heavy imports are inside this function to keep Streamlit startup fast.
     """
 
     if not text:
@@ -131,3 +121,35 @@ def synthesize_response_to_wav(text: str) -> str | None:
     )
 
     return str(TTS_OUTPUT_FILE)
+
+
+def play_wav_audio(audio_path: str | None) -> bool:
+    """
+    Plays the generated WAV file directly from Python.
+
+    This bypasses browser autoplay restrictions completely.
+    """
+
+    if not audio_path:
+        return False
+
+    path = Path(audio_path)
+
+    if not path.exists():
+        return False
+
+    try:
+        import sounddevice as sd
+        import soundfile as sf
+
+        audio_data, sample_rate = sf.read(str(path), dtype="float32")
+
+        sd.stop()
+        sd.play(audio_data, sample_rate, blocking=True)
+        sd.stop()
+
+        return True
+
+    except Exception as error:
+        print(f"[KOKORO PLAYBACK ERROR] {error}", flush=True)
+        return False

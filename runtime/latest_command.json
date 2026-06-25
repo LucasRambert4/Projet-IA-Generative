@@ -1,17 +1,15 @@
 {
-  "event_id": "709dbe8a-2203-4eab-89f2-f4d230d1c612",
-  "created_at": 1782392572.106687,
-  "transcription": "Ok Jack, affiche les ventes par région.",
+  "event_id": "d06b73da-340a-4be0-928e-2e2608a82dea",
+  "created_at": 1782415187.3196595,
+  "transcription": "Ok Jack ferme chatbot.",
   "wake_result": {
     "activated": true,
     "wake_word": "ok jack",
-    "command_text": "affiche les ventes par region",
-    "original_text": "Ok Jack, affiche les ventes par région."
+    "command_text": "ferme chatbot",
+    "original_text": "Ok Jack ferme chatbot."
   },
   "parsed_command": {
-    "intent": "show_chart",
-    "metric": "ventes",
-    "dimension": "region",
-    "raw_text": "affiche les ventes par region"
+    "intent": "close_chatbot",
+    "raw_text": "ferme chatbot"
   }
 }

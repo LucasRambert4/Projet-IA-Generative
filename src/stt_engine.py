@@ -40,26 +40,29 @@ class LocalSTTEngine:
         audio_path = str(audio_path)
 
         initial_prompt = (
-            "Transcription en français de commandes vocales pour un dashboard. "
-            "Les mots importants peuvent être : Ok Jack, Jack, Jacques, chatbot, "
-            "chatbot désactivé, ferme chatbot, ventes, vente moyenne, ventes moyennes, "
-            "moyenne des ventes, clients, visiteurs, région, régions, mois, résumé, "
-            "tableau de bord, chiffre d'affaires, descends, monte, tout en haut, tout en bas. "
-            "L'utilisateur peut demander : Quelle est ma vente moyenne ? "
-            "Quelle région vend le plus ? Combien de clients ?"
+            "Transcription en français de commandes vocales pour un dashboard local. "
+            "Les phrases commencent souvent par Ok Jack, Jack ou Jacques. "
+            "Vocabulaire attendu : chatbot, ouvre chatbot, ferme chatbot, chatbot désactivé, "
+            "ventes, vente moyenne, moyenne des ventes, clients, visiteurs, région, régions, "
+            "mois, meilleur mois, pire mois, chiffre d'affaires, résumé, tableau de bord, "
+            "descends, monte, tout en haut, tout en bas. "
+            "Exemples : Ok Jack quelle est ma vente moyenne ? "
+            "Ok Jack quelle région vend le plus ? "
+            "Ok Jack combien de clients ? "
+            "Ok Jack affiche les ventes par région."
         )
 
         segments, _ = self.model.transcribe(
             audio_path,
             language=language,
             task="transcribe",
-            beam_size=3,
-            best_of=3,
+            beam_size=2,
+            best_of=2,
             temperature=0.0,
             condition_on_previous_text=False,
             initial_prompt=initial_prompt,
             vad_filter=False,
-            no_speech_threshold=0.35,
+            no_speech_threshold=0.45,
             log_prob_threshold=-1.0,
             compression_ratio_threshold=2.4,
             word_timestamps=False,
@@ -92,12 +95,18 @@ class LocalSTTEngine:
             "Ok, Jack": "Ok Jack",
             "OK Jack": "Ok Jack",
             "Ok Jacques": "Ok Jacques",
+            "OK Jacques": "Ok Jacques",
             "Jacque": "Jacques",
+            "jack": "Jack",
+            "Chat bot": "chatbot",
             "chat bot": "chatbot",
             "tchat bot": "chatbot",
+            "Tchat bot": "chatbot",
             "vente moyen": "vente moyenne",
             "ventes moyen": "ventes moyennes",
             "ma ventes moyenne": "ma vente moyenne",
+            "ma vente moyen": "ma vente moyenne",
+            "moyen des ventes": "moyenne des ventes",
         }
 
         for old_value, new_value in replacements.items():

@@ -1,455 +1,620 @@
-# Local STT Voice-Controlled Dashboard
+# Voice-Controlled Streamlit Dashboard
 
-This project is a local prototype for controlling a Streamlit dashboard using voice commands.
+Dashboard interactif contrôlé à la voix, développé avec **Streamlit**, **Whisper**, **Silero VAD**, **Ollama** et **Kokoro TTS**.
 
-The goal is to help a user who cannot use their arms navigate through a dashboard using speech.
-
-The system works locally with:
-
-- Streamlit for the dashboard
-- faster-whisper for local Speech-To-Text
-- a custom command parser
-- a continuous voice listener
-- a wake phrase: **"Ok Jack"**
+Ce projet permet de naviguer dans un dashboard, poser des questions sur les données affichées, obtenir une réponse locale avec un modèle LLM, puis entendre cette réponse via une synthèse vocale locale.
 
 ---
 
-## Project Flow
+## Objectif du projet
 
-```txt
+L’objectif est de créer un prototype d’accessibilité permettant à un utilisateur d’interagir avec un dashboard sans utiliser la souris ni le clavier.
+
+Le système permet notamment de :
+
+* contrôler un dashboard Streamlit avec la voix ;
+* détecter une vraie parole grâce à un système VAD ;
+* utiliser un wake word comme `Ok Jack` ou `Jack` ;
+* transcrire les commandes vocales avec Whisper ;
+* poser des questions à un assistant local via Ollama ;
+* obtenir une réponse vocale avec Kokoro TTS ;
+* éviter que le micro réécoute la voix générée par l’assistant.
+
+---
+
+## Fonctionnalités principales
+
+### Commandes vocales
+
+Le dashboard peut être contrôlé avec des commandes comme :
+
+```text
+Ok Jack va à la page ventes
+Ok Jack affiche les ventes par région
+Ok Jack descends
+Ok Jack monte
+Ok Jack retourne en haut
+Ok Jack tout en bas
+```
+
+### Mode chatbot vocal
+
+Le chatbot peut être ouvert vocalement :
+
+```text
+Ok Jack chatbot
+```
+
+Une fois le chatbot activé, les questions suivantes sont envoyées directement à l’assistant :
+
+```text
+Quelle est ma vente moyenne ?
+Quelle région vend le plus ?
+Quelle est la pire région ?
+Combien de clients avons-nous ?
+```
+
+Pour fermer le chatbot :
+
+```text
+ferme chatbot
+chatbot désactivé
+```
+
+---
+
+## Architecture générale
+
+```text
 Microphone
-↓
-Continuous listener
-↓
-Detects "Ok Jack"
-↓
-Transcribes the command locally with Whisper
-↓
-Parses the text into a dashboard action
-↓
-Streamlit dashboard updates automatically
-```
-
-Example:
-
-```txt
-User says:
-Ok Jack, affiche les ventes par région
-
-Whisper may transcribe:
-Ok Jacques, affiche l'évente par région
-
-System understands:
-show_chart / ventes / region
-
-Dashboard action:
-Displays sales by region
+   ↓
+Silero VAD
+   ↓
+Ring buffer audio
+   ↓
+Wake word detection
+   ↓
+Whisper STT
+   ↓
+Command parser ou chatbot
+   ↓
+Ollama LLM
+   ↓
+Kokoro TTS
+   ↓
+Lecture audio locale Python
 ```
 
 ---
 
-## Project Structure
+## Technologies utilisées
 
-```txt
+| Technologie    | Rôle                                  |
+| -------------- | ------------------------------------- |
+| Streamlit      | Interface du dashboard                |
+| faster-whisper | Transcription vocale locale           |
+| Silero VAD     | Détection de vraie parole             |
+| Ollama         | Exécution locale du modèle LLM        |
+| llama3.2       | Modèle de langage utilisé avec Ollama |
+| Kokoro TTS     | Synthèse vocale locale                |
+| sounddevice    | Capture micro et lecture audio locale |
+| pandas         | Données du dashboard                  |
+
+---
+
+## Structure du projet
+
+```text
 stt_dashboard_voice/
 │
 ├── dashboard/
 │   └── app.py
 │
 ├── src/
-│   ├── audio_utils.py
 │   ├── command_bus.py
 │   ├── command_parser.py
-│   ├── continuous_listener.py
+│   ├── continuous_listener_live.py
 │   ├── dashboard_controller.py
-│   ├── main.py
+│   ├── kokoro_tts_engine.py
+│   ├── ollama_client.py
 │   ├── stt_engine.py
+│   ├── vad_engine.py
 │   └── wake_word.py
 │
-├── audio_samples/
-│   └── test.wav
-│
 ├── runtime/
-│   └── generated at runtime, not committed
+│   ├── latest_command.json
+│   ├── listener_status.json
+│   ├── listener_control.json
+│   ├── listener_phrase.wav
+│   └── kokoro_response.wav
 │
-├── requirements.txt
-├── .gitignore
+├── .streamlit/
+│   └── config.toml
+│
 └── README.md
 ```
 
+Le dossier `runtime/` contient les fichiers temporaires utilisés pour la communication entre le dashboard, le listener vocal, le STT et le TTS. Il ne doit pas être versionné.
+
 ---
 
-## Requirements
+## Prérequis
 
-Recommended:
+Avant de lancer le projet, il faut installer :
 
-```txt
-Python 3.10 or higher
-Windows PowerShell
-Microphone access enabled
+* Python 3.10 ou 3.11 ;
+* Ollama ;
+* un microphone fonctionnel ;
+* un environnement virtuel Python recommandé.
+
+Ollama doit être disponible dans le terminal avec la commande :
+
+```powershell
+ollama --version
 ```
-
-The project was developed and tested on Windows.
 
 ---
 
 ## Installation
 
-Clone the repository:
+### 1. Cloner le projet
 
 ```powershell
 git clone https://github.com/LucasRambert4/Projet-IA-Generative.git
 cd Projet-IA-Generative
 ```
 
-Checkout the working branch:
-
-```powershell
-git checkout v1.1-wake-word-ok-jack
-```
-
-Create a virtual environment:
+### 2. Créer un environnement virtuel
 
 ```powershell
 python -m venv .venv
 ```
 
-Activate it:
+### 3. Activer l’environnement virtuel
 
 ```powershell
-.venv\Scripts\Activate.ps1
+.\.venv\Scripts\activate
 ```
 
-If PowerShell blocks the activation, run:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.venv\Scripts\Activate.ps1
-```
-
-Install dependencies:
+### 4. Installer les dépendances
 
 ```powershell
 pip install -r requirements.txt
 ```
 
----
-
-## Running the Project
-
-You need to open **two terminals**.
-
----
-
-### Terminal 1 — Start the Streamlit dashboard
-
-From the project root:
+Si le fichier `requirements.txt` n’est pas encore présent, installer les dépendances principales :
 
 ```powershell
-.venv\Scripts\Activate.ps1
+pip install streamlit streamlit-autorefresh pandas numpy sounddevice soundfile faster-whisper silero-vad requests kokoro
+```
+
+### 5. Installer le modèle Ollama
+
+```powershell
+ollama pull llama3.2
+```
+
+---
+
+## Configuration Streamlit recommandée
+
+Créer le fichier suivant :
+
+```text
+.streamlit/config.toml
+```
+
+Avec le contenu :
+
+```toml
+[server]
+fileWatcherType = "none"
+runOnSave = false
+
+[browser]
+gatherUsageStats = false
+```
+
+Cette configuration évite certains ralentissements et messages liés au watcher Streamlit.
+
+---
+
+## Configuration du micro
+
+Dans le fichier :
+
+```text
+src/continuous_listener_live.py
+```
+
+la variable suivante définit le périphérique micro utilisé :
+
+```python
+FIXED_INPUT_DEVICE = 1
+```
+
+Selon votre ordinateur, il peut être nécessaire de changer cette valeur.
+
+Pour afficher la liste des périphériques audio disponibles, vous pouvez exécuter :
+
+```python
+import sounddevice as sd
+print(sd.query_devices())
+```
+
+Puis remplacer `FIXED_INPUT_DEVICE` par l’index correspondant au bon microphone.
+
+---
+
+## Lancement propre du projet
+
+Depuis PowerShell :
+
+```powershell
+cd C:\chemin\vers\le\projet
+.\.venv\Scripts\activate
+```
+
+Nettoyer les anciens processus :
+
+```powershell
+Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*continuous_listener_live.py*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+```
+
+Nettoyer les fichiers temporaires :
+
+```powershell
+del runtime\live_listener.pid -ErrorAction SilentlyContinue
+del runtime\listener_status.json -ErrorAction SilentlyContinue
+del runtime\listener_control.json -ErrorAction SilentlyContinue
+del runtime\latest_command.json -ErrorAction SilentlyContinue
+del runtime\listener_phrase.wav -ErrorAction SilentlyContinue
+del runtime\kokoro_response.wav -ErrorAction SilentlyContinue
+```
+
+Lancer le dashboard :
+
+```powershell
 streamlit run dashboard/app.py
 ```
 
-This opens the dashboard in the browser.
+Le dashboard démarre automatiquement le listener vocal.
 
 ---
 
-### Terminal 2 — Start the continuous voice listener
+## Utilisation
 
-Open another PowerShell terminal.
+### Ouvrir le chatbot
 
-From the project root:
+```text
+Ok Jack chatbot
+```
+
+### Poser une question
+
+```text
+Quelle est ma vente moyenne ?
+```
+
+### Poser une autre question sans répéter le wake word
+
+```text
+Quelle région vend le plus ?
+```
+
+### Fermer le chatbot
+
+```text
+ferme chatbot
+```
+
+---
+
+## Fonctionnement du STT
+
+Le système utilise `faster-whisper` pour convertir la voix en texte.
+
+Pour améliorer la fiabilité, le projet utilise :
+
+* un prompt de contexte contenant le vocabulaire du dashboard ;
+* un modèle Whisper local ;
+* une détection VAD avant transcription ;
+* un buffer audio pour éviter de couper le début de phrase.
+
+Cela permet de mieux reconnaître des commandes comme :
+
+```text
+Ok Jack quelle est ma vente moyenne ?
+Ok Jack affiche les ventes par région
+Ok Jack ouvre le chatbot
+```
+
+---
+
+## Fonctionnement du VAD
+
+Le projet utilise **Silero VAD** pour détecter une vraie voix humaine.
+
+Avant, le micro s’activait uniquement avec un seuil de volume. Cette approche posait plusieurs problèmes :
+
+* activation trop tardive ;
+* perte du début de phrase ;
+* activation avec du bruit ;
+* coupure avant la fin de la phrase.
+
+Avec Silero VAD, le système détecte une activité vocale réelle avant de lancer l’enregistrement complet.
+
+---
+
+## Fonctionnement du chatbot
+
+Le chatbot utilise Ollama avec le modèle :
+
+```text
+llama3.2
+```
+
+Le dashboard injecte un contexte à Ollama contenant les données disponibles :
+
+* ventes par mois ;
+* clients par mois ;
+* ventes par région ;
+* clients par région ;
+* ventes totales ;
+* vente moyenne ;
+* meilleure région ;
+* meilleur mois ;
+* pire mois.
+
+Cela évite que l’assistant réponde hors contexte ou parle du site officiel Streamlit.
+
+---
+
+## Fonctionnement du TTS
+
+Le projet utilise **Kokoro TTS** pour générer la réponse vocale.
+
+La voix est générée dans un fichier :
+
+```text
+runtime/kokoro_response.wav
+```
+
+Puis le fichier est lu directement par Python avec `sounddevice`.
+
+Cette méthode évite les restrictions d’autoplay du navigateur. Le son ne dépend donc plus de Streamlit, Chrome ou Opera.
+
+---
+
+## Pause automatique du micro pendant la voix Kokoro
+
+Lorsque Kokoro parle, le micro est temporairement mis en pause.
+
+Cela évite que le système entende sa propre voix et relance une commande accidentellement.
+
+Le dashboard écrit une instruction dans :
+
+```text
+runtime/listener_control.json
+```
+
+Le listener vocal lit ce fichier et se met en pause jusqu’à la fin estimée de la lecture audio.
+
+---
+
+## Exemples de commandes
+
+### Navigation
+
+```text
+Ok Jack va à la page résumé
+Ok Jack va à la page ventes
+Ok Jack va à la page clients
+Ok Jack va à la page régions
+```
+
+### Graphiques
+
+```text
+Ok Jack affiche les ventes par région
+Ok Jack affiche les clients par région
+Ok Jack affiche les ventes par mois
+```
+
+### Scroll
+
+```text
+Ok Jack descends
+Ok Jack monte
+Ok Jack tout en haut
+Ok Jack tout en bas
+```
+
+### Questions chatbot
+
+```text
+Ok Jack chatbot
+Quelle est ma vente moyenne ?
+Quelle région vend le plus ?
+Quel est le meilleur mois ?
+Quelle est la pire région ?
+Combien de clients avons-nous ?
+ferme chatbot
+```
+
+---
+
+## Dépannage
+
+### Le micro ne s’active pas
+
+Vérifier l’index du micro dans :
+
+```python
+FIXED_INPUT_DEVICE = 1
+```
+
+Puis relancer le dashboard.
+
+---
+
+### Le listener ne redémarre pas
+
+Arrêter les anciens processus :
 
 ```powershell
-.venv\Scripts\Activate.ps1
-python src/continuous_listener.py
+Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*continuous_listener_live.py*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
 ```
 
-Expected terminal output:
+Puis supprimer :
 
-```txt
-Loading local STT model...
-
-Continuous voice listener started.
-Say: Ok Jack, affiche les ventes par région
-Press CTRL + C to stop.
+```powershell
+del runtime\live_listener.pid -ErrorAction SilentlyContinue
 ```
-
-The first launch may take longer because the Whisper model may need to be downloaded.
 
 ---
 
-## How to Test
+### Ollama ne répond pas
 
-Once both terminals are running, say one of these commands clearly:
+Vérifier que le modèle est installé :
 
-```txt
-Ok Jack, affiche les ventes par région
+```powershell
+ollama pull llama3.2
 ```
 
-```txt
-Ok Jack, va à la page ventes
+Lancer Ollama manuellement :
+
+```powershell
+ollama serve
 ```
 
-```txt
-Ok Jack, va à la page clients
-```
-
-```txt
-Ok Jack, réinitialise les filtres
-```
-
-You can also test with imperfect pronunciation or transcription:
-
-```txt
-Ok Jacques, affiche l'évente par région
-```
-
-The system should still understand the command.
+Puis relancer Streamlit.
 
 ---
 
-## Expected Result
+### Kokoro ne parle pas
 
-In the listener terminal, you should see something like:
+Vérifier que le fichier audio est bien généré :
 
-```txt
-Transcription: Ok Jacques, réinitialise les filtres.
-Wake word detected.
-Command: reinitialise les filtres
-Parsed: {'intent': 'reset_filters', 'raw_text': 'reinitialise les filtres'}
+```text
+runtime/kokoro_response.wav
 ```
 
-In the Streamlit dashboard, the page or chart should update automatically.
+Vérifier aussi que `sounddevice` et `soundfile` sont installés :
+
+```powershell
+pip install sounddevice soundfile
+```
 
 ---
 
-## Wake Word Behavior
+### Messages `torchvision` dans le terminal
 
-The dashboard only reacts when the command starts with:
+Certains messages peuvent apparaître à cause du watcher Streamlit et de la librairie `transformers`.
 
-```txt
-Ok Jack
+La configuration suivante réduit fortement ces messages :
+
+```toml
+[server]
+fileWatcherType = "none"
+runOnSave = false
 ```
-
-Accepted variations include:
-
-```txt
-Ok Jack
-Okay Jack
-Ok Jacques
-Okay Jacques
-Ok Jak
-```
-
-This avoids executing accidental speech.
 
 ---
 
-## Two Command Modes
+### Warning `use_container_width`
 
-The system supports two patterns.
+Streamlit peut afficher :
 
-### 1. Wake word and command together
-
-```txt
-Ok Jack, affiche les ventes par région
+```text
+Please replace use_container_width with width
 ```
 
-### 2. Wake word first, command after
-
-Say:
-
-```txt
-Ok Jack
-```
-
-Then quickly say:
-
-```txt
-Va à la page ventes
-```
-
-The listener waits a few seconds for the follow-up command.
-
----
-
-## Current Supported Commands
-
-| Voice command | Expected action |
-|---|---|
-| Ok Jack, va à la page ventes | Opens the sales page |
-| Ok Jack, va à la page clients | Opens the clients page |
-| Ok Jack, affiche les ventes par région | Shows sales by region |
-| Ok Jack, réinitialise les filtres | Resets filters and returns to summary |
-
----
-
-## Technical Notes
-
-The system is separated into modules:
-
-| File | Role |
-|---|---|
-| `stt_engine.py` | Local Speech-To-Text using faster-whisper |
-| `wake_word.py` | Detects the "Ok Jack" trigger |
-| `command_parser.py` | Converts text into dashboard commands |
-| `continuous_listener.py` | Continuously listens to the microphone |
-| `command_bus.py` | Sends commands from the listener to Streamlit |
-| `dashboard_controller.py` | Applies commands to the dashboard state |
-| `dashboard/app.py` | Streamlit dashboard interface |
-
----
-
-## Why There Are Two Processes
-
-Streamlit is not ideal for always-on microphone listening.
-
-So the project uses two separate processes:
-
-```txt
-1. Streamlit dashboard
-2. Continuous local voice listener
-```
-
-They communicate through a local JSON file:
-
-```txt
-runtime/latest_command.json
-```
-
-This file is generated automatically and should not be committed.
-
----
-
-## Troubleshooting
-
-### The microphone does not work
-
-Check that Windows allows microphone access for the terminal or Python.
-
-Also check your default input device.
-
----
-
-### The dashboard does not update
-
-Make sure both terminals are running:
-
-```txt
-Terminal 1: streamlit run dashboard/app.py
-Terminal 2: python src/continuous_listener.py
-```
-
-Also check that `runtime/latest_command.json` is being created after a voice command.
-
----
-
-### Whisper is slow
-
-The current model is:
-
-```txt
-base
-```
-
-It is more accurate than very small models but may be slower on some machines.
-
-If needed, change this in:
-
-```txt
-src/continuous_listener.py
-```
-
-From:
+Cela n’empêche pas le projet de fonctionner. Pour corriger, remplacer progressivement :
 
 ```python
-MODEL_SIZE = "base"
+use_container_width=True
 ```
 
-To:
+par :
 
 ```python
-MODEL_SIZE = "small"
-```
-
-or for faster but less accurate testing:
-
-```python
-MODEL_SIZE = "tiny"
+width="stretch"
 ```
 
 ---
 
-### The wake word is not detected
+## Limites actuelles
 
-Try saying:
+Ce projet est un prototype local. Il n’a pas encore le même niveau de robustesse qu’un assistant vocal commercial comme Siri, Alexa ou Google Assistant.
 
-```txt
-Ok Jack
-```
+Les limites principales sont :
 
-or:
-
-```txt
-Ok Jacques
-```
-
-clearly at the beginning of the sentence.
-
-Example:
-
-```txt
-Ok Jack, affiche les ventes par région
-```
-
-Avoid starting directly with the command:
-
-```txt
-Affiche les ventes par région
-```
-
-This will be ignored because the wake word is missing.
+* wake word basé sur transcription, pas encore sur un vrai modèle dédié ;
+* sensibilité dépendante du micro ;
+* latence possible au premier chargement de Whisper, Ollama ou Kokoro ;
+* données de démonstration intégrées directement dans le dashboard.
 
 ---
 
-## Git Notes
+## Améliorations possibles
 
-Do not commit:
+Les améliorations futures possibles :
 
-```txt
-.venv/
-runtime/
-audio_samples/*.wav
-audio_samples/*.mp3
-audio_samples/*.m4a
-```
-
-These should be ignored by `.gitignore`.
+* ajouter un vrai moteur de wake word comme openWakeWord ou Porcupine ;
+* créer un wake word personnalisé ;
+* connecter le dashboard à une vraie base de données ;
+* ajouter plus de pages et de métriques ;
+* améliorer la détection des intentions ;
+* créer un vrai composant frontend pour le chatbot ;
+* ajouter un mode multi-langue ;
+* packager le projet avec Docker.
 
 ---
 
-## Development Status
+## Résumé technique
 
-Current version:
+Le projet fonctionne avec plusieurs processus qui communiquent via des fichiers JSON dans `runtime/`.
 
-```txt
-V1.1 — Continuous voice activation with "Ok Jack"
+```text
+continuous_listener_live.py
+    écoute le micro
+    détecte la voix
+    transcrit avec Whisper
+    écrit la commande dans latest_command.json
+
+dashboard/app.py
+    lit latest_command.json
+    modifie l’état Streamlit
+    appelle Ollama si nécessaire
+    lance Kokoro TTS
+    met le listener en pause pendant la lecture audio
+
+kokoro_tts_engine.py
+    génère le fichier WAV
+    lit la réponse vocalement via Python
+
+command_bus.py
+    centralise les échanges entre listener et dashboard
 ```
 
-Implemented:
+Cette architecture permet de garder le dashboard réactif tout en séparant clairement :
 
-- Local STT with faster-whisper
-- Streamlit dashboard
-- Voice command parser
-- Wake word detection
-- Continuous microphone listener
-- Local communication between listener and dashboard
+* l’écoute micro ;
+* la transcription ;
+* le parsing ;
+* l’analyse LLM ;
+* la synthèse vocale ;
+* l’interface utilisateur.
 
-Next possible improvements:
+---
 
-- Add command history in the dashboard
-- Add a list of available commands in the UI
-- Add evaluation metrics
-- Integrate into the real dashboard
-- Add a local LLM for more flexible command understanding
+## Auteurs
+
+Projet réalisé dans le cadre d’un travail autour de l’IA générative, de l’accessibilité et du contrôle vocal d’un dashboard.
+
+Développé par :
+
+```text
+Lucas Rambert
+```
