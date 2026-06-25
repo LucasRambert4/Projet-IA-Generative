@@ -401,6 +401,8 @@ def process_chatbot_message(user_message: str):
 
     executor = get_chatbot_executor()
 
+    st.session_state.last_tts_audio = None
+
     st.session_state.chatbot_future = executor.submit(
         call_chatbot_in_background,
         user_message,
@@ -628,6 +630,48 @@ def render_listener_indicator():
     """
 
     render_html(html)
+
+def scroll_chatbot_to_bottom():
+    """
+    Scrolls the chatbot messages area to the latest message.
+    """
+
+    if not st.session_state.get("chatbot_open"):
+        return
+
+    message_count = len(st.session_state.get("chat_history", []))
+    waiting = int(bool(st.session_state.get("chatbot_waiting_response")))
+
+    components.html(
+        f"""
+        <script>
+        (function() {{
+            const doc = window.parent.document;
+            const container = doc.getElementById("chatbot-messages");
+
+            if (!container) {{
+                return;
+            }}
+
+            const scrollToBottom = () => {{
+                container.scrollTop = container.scrollHeight;
+
+                const anchor = doc.getElementById("chatbot-scroll-anchor");
+                if (anchor) {{
+                    anchor.scrollIntoView({{ block: "end" }});
+                }}
+            }};
+
+            scrollToBottom();
+            requestAnimationFrame(scrollToBottom);
+            setTimeout(scrollToBottom, 120);
+        }})();
+        </script>
+        <!-- chat-scroll:{message_count}:{waiting} -->
+        """,
+        height=0,
+    )
+
 
 def render_chatbot_popup():
     """
@@ -874,7 +918,7 @@ def render_chatbot_popup():
         """
 
     ollama_status = (
-        "Ollama actif"
+        "Ollama + voix Kokoro actifs"
         if st.session_state.get("ollama_available")
         else "Ollama en démarrage ou indisponible"
     )
@@ -889,18 +933,39 @@ def render_chatbot_popup():
             </div>
         </div>
 
-        <div class="chatbot-messages">
+        <div class="chatbot-messages" id="chatbot-messages">
             {messages_html}
             {audio_html}
+            <div id="chatbot-scroll-anchor"></div>
         </div>
 
         <div class="chatbot-footer">
             Dites <strong>chatbot désactivé</strong> ou <strong>ferme chatbot</strong> pour fermer la fenêtre.
         </div>
     </div>
+    <script>
+    (function() {{
+        const scrollToBottom = () => {{
+            const container = document.getElementById("chatbot-messages");
+            if (!container) return;
+
+            container.scrollTop = container.scrollHeight;
+
+            const anchor = document.getElementById("chatbot-scroll-anchor");
+            if (anchor) {{
+                anchor.scrollIntoView({{ block: "end" }});
+            }}
+        }};
+
+        scrollToBottom();
+        requestAnimationFrame(scrollToBottom);
+        setTimeout(scrollToBottom, 120);
+    }})();
+    </script>
     """
 
     render_html(chatbot_html)
+    scroll_chatbot_to_bottom()
 
 
 # ==========================================================
