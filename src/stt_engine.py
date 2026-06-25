@@ -8,8 +8,7 @@ class LocalSTTEngine:
     """
     Local speech-to-text engine using faster-whisper.
 
-    It keeps Whisper local while using better transcription parameters
-    for short French dashboard voice commands.
+    Optimized for short French dashboard voice commands.
     """
 
     def __init__(
@@ -32,16 +31,10 @@ class LocalSTTEngine:
     def transcribe_audio(
         self,
         audio_path: str | Path,
-        language: str = "fr"
+        language: str = "fr",
     ) -> str:
         """
         Transcribes an audio file into text.
-
-        Optimized for:
-        - French voice commands
-        - dashboard navigation
-        - chatbot activation
-        - short spoken phrases
         """
 
         audio_path = str(audio_path)
@@ -49,36 +42,26 @@ class LocalSTTEngine:
         initial_prompt = (
             "Transcription en français de commandes vocales pour un dashboard. "
             "Les mots importants peuvent être : Ok Jack, Jack, Jacques, chatbot, "
-            "chatbot désactivé, ferme chatbot, ventes, région, régions, clients, "
-            "résumé, tableau de bord, chiffre d'affaires, descends, monte, "
-            "réinitialise les filtres. "
-            "L'utilisateur peut demander d'afficher les ventes par région, "
-            "d'ouvrir le chatbot ou de naviguer dans le dashboard."
+            "chatbot désactivé, ferme chatbot, ventes, vente moyenne, ventes moyennes, "
+            "moyenne des ventes, clients, visiteurs, région, régions, mois, résumé, "
+            "tableau de bord, chiffre d'affaires, descends, monte, tout en haut, tout en bas. "
+            "L'utilisateur peut demander : Quelle est ma vente moyenne ? "
+            "Quelle région vend le plus ? Combien de clients ?"
         )
 
         segments, _ = self.model.transcribe(
             audio_path,
             language=language,
             task="transcribe",
-
-            # Better decoding quality.
-            beam_size=5,
-            best_of=5,
+            beam_size=3,
+            best_of=3,
             temperature=0.0,
-
-            # Important for short commands.
             condition_on_previous_text=False,
             initial_prompt=initial_prompt,
-
-            # We already handle silence in the listener,
-            # so avoid Whisper VAD cutting the beginning.
             vad_filter=False,
-
-            # Less aggressive no-speech filtering.
-            no_speech_threshold=0.25,
+            no_speech_threshold=0.35,
             log_prob_threshold=-1.0,
             compression_ratio_threshold=2.4,
-
             word_timestamps=False,
         )
 
@@ -112,6 +95,9 @@ class LocalSTTEngine:
             "Jacque": "Jacques",
             "chat bot": "chatbot",
             "tchat bot": "chatbot",
+            "vente moyen": "vente moyenne",
+            "ventes moyen": "ventes moyennes",
+            "ma ventes moyenne": "ma vente moyenne",
         }
 
         for old_value, new_value in replacements.items():

@@ -1,16 +1,17 @@
 import base64
-import os
+import re
 import subprocess
-import time
 import sys
+import time
+import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 from html import escape
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
-from streamlit_autorefresh import st_autorefresh
 
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+from streamlit_autorefresh import st_autorefresh
 
 
 # ==========================================================
@@ -19,6 +20,7 @@ import streamlit.components.v1 as components
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 RUNTIME_DIR = ROOT_DIR / "runtime"
+
 LISTENER_PID_FILE = RUNTIME_DIR / "live_listener.pid"
 LISTENER_LOG_FILE = RUNTIME_DIR / "live_listener.log"
 LISTENER_SCRIPT = ROOT_DIR / "src" / "continuous_listener_live.py"
@@ -55,14 +57,28 @@ except Exception:
 st.set_page_config(
     page_title="Voice Dashboard",
     page_icon="🎙️",
-    layout="wide"
+    layout="wide",
 )
+
 
 @st.cache_resource
 def get_chatbot_executor():
     """
     Creates one background worker for Ollama calls.
     """
+
+    return ThreadPoolExecutor(max_workers=1)
+
+
+@st.cache_resource
+def get_tts_executor():
+    """
+    Creates one background worker for Kokoro TTS.
+
+    Kokoro is separated from Ollama so audio generation does not slow down
+    the next chatbot response.
+    """
+
     return ThreadPoolExecutor(max_workers=1)
 
 
@@ -84,6 +100,21 @@ if "chatbot_waiting_response" not in st.session_state:
 if "chatbot_pending_user_message" not in st.session_state:
     st.session_state.chatbot_pending_user_message = None
 
+if "tts_future" not in st.session_state:
+    st.session_state.tts_future = None
+
+if "tts_waiting_response" not in st.session_state:
+    st.session_state.tts_waiting_response = False
+
+if "active_tts_request_id" not in st.session_state:
+    st.session_state.active_tts_request_id = None
+
+if "last_tts_audio_event_id" not in st.session_state:
+    st.session_state.last_tts_audio_event_id = None
+
+if "last_autoplayed_tts_audio_event_id" not in st.session_state:
+    st.session_state.last_autoplayed_tts_audio_event_id = None
+
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -95,6 +126,9 @@ if "last_processed_event_id" not in st.session_state:
 
 if "last_scroll_action_id" not in st.session_state:
     st.session_state.last_scroll_action_id = 0
+
+if "scroll_anchor_index" not in st.session_state:
+    st.session_state.scroll_anchor_index = 0
 
 if "ollama_checked" not in st.session_state:
     st.session_state.ollama_checked = False
@@ -146,9 +180,42 @@ sales_by_region = pd.DataFrame(
 )
 
 
+SCROLL_ANCHORS = [
+    "voice-scroll-top",
+    "voice-scroll-content",
+    "voice-scroll-middle",
+    "voice-scroll-bottom",
+]
+
+
 # ==========================================================
 # HELPERS
 # ==========================================================
+
+def normalize_question(text: str) -> str:
+    """
+    Normalizes user text for deterministic dashboard answers.
+    """
+
+    if not text:
+        return ""
+
+    text = text.lower().strip()
+
+    text = unicodedata.normalize("NFD", text)
+    text = "".join(
+        character for character in text
+        if unicodedata.category(character) != "Mn"
+    )
+
+    text = text.replace("'", " ")
+    text = text.replace("-", " ")
+
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
+
 
 def is_windows_process_running(pid: int) -> bool:
     """
@@ -167,45 +234,6 @@ def is_windows_process_running(pid: int) -> bool:
 
     except Exception:
         return False
-
-def call_chatbot_in_background(
-    user_message: str,
-    conversation_history: list[dict]
-) -> tuple[str, str | None]:
-    """
-    Calls Ollama and Kokoro in a background thread.
-
-    Important:
-    Do not use st.session_state inside this function.
-    """
-
-    if ask_ollama is None:
-        return (
-            "Ollama n'est pas encore connecté dans l'application. Vérifiez le fichier src/ollama_client.py.",
-            None
-        )
-
-    try:
-        assistant_response = ask_ollama(
-            user_message=user_message,
-            conversation_history=conversation_history,
-        )
-
-    except Exception:
-        assistant_response = (
-            "Ollama n'est pas disponible pour le moment. "
-            "Vérifiez que le modèle llama3.2:latest est installé."
-        )
-
-    audio_path = None
-
-    if synthesize_response_to_wav is not None:
-        try:
-            audio_path = synthesize_response_to_wav(assistant_response)
-        except Exception:
-            audio_path = None
-
-    return assistant_response, audio_path
 
 
 def is_listener_already_running() -> bool:
@@ -227,10 +255,6 @@ def is_listener_already_running() -> bool:
 def start_live_listener_if_needed() -> tuple[bool, str]:
     """
     Starts continuous_listener_live.py automatically with the dashboard.
-
-    Returns:
-    - success boolean
-    - status message
     """
 
     RUNTIME_DIR.mkdir(exist_ok=True)
@@ -250,7 +274,11 @@ def start_live_listener_if_needed() -> tuple[bool, str]:
             creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP
 
         process = subprocess.Popen(
-            [sys.executable, str(LISTENER_SCRIPT)],
+            [
+                sys.executable,
+                "-u",
+                str(LISTENER_SCRIPT),
+            ],
             cwd=str(ROOT_DIR),
             stdout=log_file,
             stderr=log_file,
@@ -260,7 +288,7 @@ def start_live_listener_if_needed() -> tuple[bool, str]:
 
         LISTENER_PID_FILE.write_text(
             str(process.pid),
-            encoding="utf-8"
+            encoding="utf-8",
         )
 
         st.session_state.listener_process = process
@@ -271,9 +299,251 @@ def start_live_listener_if_needed() -> tuple[bool, str]:
         return False, f"Impossible de démarrer le live listener : {error}"
 
 
+def build_dashboard_context() -> str:
+    """
+    Builds a clear context for Ollama using only the data available
+    in the Streamlit dashboard.
+    """
+
+    current_page = st.session_state.get("current_page", "resume")
+    selected_metric = st.session_state.get("selected_metric")
+    selected_dimension = st.session_state.get("selected_dimension")
+
+    total_sales = int(sales_by_month["ventes"].sum())
+    total_clients = int(sales_by_month["clients"].sum())
+    average_sales = int(sales_by_month["ventes"].mean())
+
+    best_month_row = sales_by_month.loc[sales_by_month["ventes"].idxmax()]
+    worst_month_row = sales_by_month.loc[sales_by_month["ventes"].idxmin()]
+    best_region_row = sales_by_region.loc[sales_by_region["ventes"].idxmax()]
+    best_client_region_row = sales_by_region.loc[sales_by_region["clients"].idxmax()]
+
+    sales_by_month_text = sales_by_month.to_dict(orient="records")
+    sales_by_region_text = sales_by_region.to_dict(orient="records")
+
+    context = f"""
+Tu es l'assistant vocal d'un dashboard Streamlit local de démonstration.
+Tu dois répondre uniquement à partir des données intégrées dans ce dashboard.
+Tu ne dois jamais parler du site officiel Streamlit, du trafic web réel ou de données en temps réel.
+
+Page actuelle du dashboard : {current_page}
+Métrique sélectionnée : {selected_metric}
+Dimension sélectionnée : {selected_dimension}
+
+Données disponibles :
+1. sales_by_month : ventes et clients par mois.
+{sales_by_month_text}
+
+2. sales_by_region : ventes et clients par région.
+{sales_by_region_text}
+
+Indicateurs déjà calculés :
+- Ventes totales : {total_sales} €
+- Clients totaux : {total_clients}
+- Vente moyenne mensuelle : {average_sales} €
+- Meilleur mois en ventes : {best_month_row["mois"]} avec {int(best_month_row["ventes"])} €
+- Mois le plus faible en ventes : {worst_month_row["mois"]} avec {int(worst_month_row["ventes"])} €
+- Meilleure région en ventes : {best_region_row["region"]} avec {int(best_region_row["ventes"])} €
+- Région avec le plus de clients : {best_client_region_row["region"]} avec {int(best_client_region_row["clients"])} clients
+
+Règles :
+- Réponds en français.
+- Réponds comme si tu analysais ce dashboard précis.
+- Si l'utilisateur dit "visiteurs", comprends-le comme "clients" dans ce prototype.
+- Si l'utilisateur demande une moyenne, un total, un maximum ou une comparaison, calcule avec les données fournies.
+- Si une donnée n'existe vraiment pas, dis : "Cette donnée n'est pas présente dans le jeu de données actuel."
+- Ne recommande pas de contacter Streamlit.
+- Ne parle pas de données temps réel.
+- Réponse courte, claire, utile et lisible à voix haute.
+"""
+
+    return context.strip()
+
+
+def answer_direct_dashboard_question(user_message: str) -> str | None:
+    """
+    Answers common dashboard questions directly without calling Ollama.
+
+    This improves speed and prevents wrong answers for obvious KPIs.
+    """
+
+    normalized_text = normalize_question(user_message)
+
+    if not normalized_text:
+        return None
+
+    total_sales = int(sales_by_month["ventes"].sum())
+    total_clients = int(sales_by_month["clients"].sum())
+    average_sales = int(sales_by_month["ventes"].mean())
+
+    best_month_row = sales_by_month.loc[sales_by_month["ventes"].idxmax()]
+    worst_month_row = sales_by_month.loc[sales_by_month["ventes"].idxmin()]
+    best_region_row = sales_by_region.loc[sales_by_region["ventes"].idxmax()]
+    best_client_region_row = sales_by_region.loc[sales_by_region["clients"].idxmax()]
+
+    asks_average_sales = (
+        "vente moyenne" in normalized_text
+        or "ventes moyenne" in normalized_text
+        or "moyenne des ventes" in normalized_text
+        or "moyenne de vente" in normalized_text
+        or "moyenne vente" in normalized_text
+    )
+
+    if asks_average_sales:
+        return (
+            f"La vente moyenne mensuelle est de {average_sales:,} €. "
+            "Elle est calculée à partir des ventes des six mois du dashboard."
+        )
+
+    asks_total_sales = (
+        "vente totale" in normalized_text
+        or "ventes totales" in normalized_text
+        or "total des ventes" in normalized_text
+        or "chiffre d affaire total" in normalized_text
+        or "ca total" in normalized_text
+    )
+
+    if asks_total_sales:
+        return f"Les ventes totales du dashboard sont de {total_sales:,} €."
+
+    asks_total_clients = (
+        "client total" in normalized_text
+        or "clients total" in normalized_text
+        or "clients totaux" in normalized_text
+        or "total des clients" in normalized_text
+        or "visiteurs" in normalized_text
+    )
+
+    if asks_total_clients:
+        return (
+            f"Le dashboard contient {total_clients} clients au total. "
+            f"La région avec le plus de clients est {best_client_region_row['region']}, "
+            f"avec {int(best_client_region_row['clients'])} clients."
+        )
+
+    asks_best_region = (
+        "meilleure region" in normalized_text
+        or "region vend le plus" in normalized_text
+        or "region a le plus de ventes" in normalized_text
+        or "quelle region vend" in normalized_text
+    )
+
+    if asks_best_region:
+        return (
+            f"La région qui vend le plus est {best_region_row['region']}, "
+            f"avec {int(best_region_row['ventes']):,} € de ventes."
+        )
+
+    asks_best_month = (
+        "meilleur mois" in normalized_text
+        or "mois vend le plus" in normalized_text
+        or "mois avec le plus de ventes" in normalized_text
+    )
+
+    if asks_best_month:
+        return (
+            f"Le meilleur mois est {best_month_row['mois']}, "
+            f"avec {int(best_month_row['ventes']):,} € de ventes."
+        )
+
+    asks_worst_month = (
+        "pire mois" in normalized_text
+        or "mois le plus faible" in normalized_text
+        or "mois vend le moins" in normalized_text
+    )
+
+    if asks_worst_month:
+        return (
+            f"Le mois le plus faible est {worst_month_row['mois']}, "
+            f"avec {int(worst_month_row['ventes']):,} € de ventes."
+        )
+
+    return None
+
+
+def call_chatbot_in_background(
+    user_message: str,
+    conversation_history: list[dict],
+    dashboard_context: str,
+) -> str:
+    """
+    Calls Ollama in a background thread.
+
+    This function only generates the text response.
+    TTS is handled separately so the UI can display text before audio.
+    """
+
+    if ask_ollama is None:
+        return (
+            "Ollama n'est pas encore connecté dans l'application. "
+            "Vérifiez le fichier src/ollama_client.py."
+        )
+
+    try:
+        assistant_response = ask_ollama(
+            user_message=user_message,
+            conversation_history=conversation_history,
+            dashboard_context=dashboard_context,
+        )
+
+        return assistant_response
+
+    except Exception:
+        return (
+            "Ollama n'est pas disponible pour le moment. "
+            "Vérifiez que le modèle llama3.2:latest est installé."
+        )
+
+
+def call_tts_in_background(
+    text: str,
+    tts_request_id: str,
+) -> tuple[str, str | None]:
+    """
+    Generates Kokoro TTS audio in a background thread.
+
+    Returns the request id with the audio path so Streamlit can ignore
+    old TTS results if a new question was already asked.
+    """
+
+    if synthesize_response_to_wav is None:
+        return tts_request_id, None
+
+    try:
+        audio_path = synthesize_response_to_wav(text)
+        return tts_request_id, audio_path
+
+    except Exception:
+        return tts_request_id, None
+
+
+def start_tts_for_response(assistant_response: str):
+    """
+    Starts Kokoro TTS asynchronously for the latest assistant response.
+    """
+
+    if synthesize_response_to_wav is None:
+        return
+
+    tts_request_id = f"tts_{int(time.time() * 1000)}"
+
+    st.session_state.active_tts_request_id = tts_request_id
+    st.session_state.tts_waiting_response = True
+    st.session_state.last_tts_audio = None
+    st.session_state.last_tts_audio_event_id = None
+
+    tts_executor = get_tts_executor()
+
+    st.session_state.tts_future = tts_executor.submit(
+        call_tts_in_background,
+        assistant_response,
+        tts_request_id,
+    )
+
+
 def run_scroll_if_needed():
     """
-    Executes pending scroll action injected by dashboard_controller.py.
+    Executes stable voice scroll using HTML anchors.
     """
 
     current_scroll_id = st.session_state.get("scroll_action_id", 0)
@@ -283,114 +553,96 @@ def run_scroll_if_needed():
         return
 
     direction = st.session_state.get("pending_scroll_direction")
-    amount = st.session_state.get("pending_scroll_amount", 700)
+    amount = int(st.session_state.get("pending_scroll_amount", 700))
 
     if not direction:
         return
 
+    current_anchor_index = int(st.session_state.get("scroll_anchor_index", 0))
+
+    step = 1
+
+    if amount >= 1200:
+        step = 2
+
     if direction == "down":
-        script = f"window.parent.scrollBy({{top: {amount}, left: 0, behavior: 'smooth'}});"
+        next_anchor_index = min(
+            current_anchor_index + step,
+            len(SCROLL_ANCHORS) - 1,
+        )
+
     elif direction == "up":
-        script = f"window.parent.scrollBy({{top: -{amount}, left: 0, behavior: 'smooth'}});"
+        next_anchor_index = max(
+            current_anchor_index - step,
+            0,
+        )
+
     elif direction == "top":
-        script = "window.parent.scrollTo({top: 0, left: 0, behavior: 'smooth'});"
+        next_anchor_index = 0
+
     elif direction == "bottom":
-        script = "window.parent.scrollTo({top: document.body.scrollHeight, left: 0, behavior: 'smooth'});"
+        next_anchor_index = len(SCROLL_ANCHORS) - 1
+
     else:
         return
+
+    target_anchor = SCROLL_ANCHORS[next_anchor_index]
+
+    st.session_state.scroll_anchor_index = next_anchor_index
+    st.session_state.last_scroll_action_id = current_scroll_id
+
+    safe_target_anchor = escape(target_anchor)
 
     components.html(
         f"""
         <script>
-        {script}
+        function scrollToVoiceAnchor() {{
+            try {{
+                const targetHash = "#{safe_target_anchor}";
+                const parentWindow = window.parent;
+
+                if (parentWindow.location.hash === targetHash) {{
+                    parentWindow.history.replaceState(
+                        null,
+                        "",
+                        parentWindow.location.pathname + parentWindow.location.search
+                    );
+                }}
+
+                setTimeout(function () {{
+                    parentWindow.location.hash = targetHash;
+                }}, 80);
+
+            }} catch (error) {{
+                window.location.hash = "#{safe_target_anchor}";
+            }}
+        }}
+
+        scrollToVoiceAnchor();
+        setTimeout(scrollToVoiceAnchor, 250);
         </script>
         """,
         height=0,
     )
 
-    st.session_state.last_scroll_action_id = current_scroll_id
-
-
-def ask_chatbot(user_message: str) -> str:
-    """
-    Sends a message to Ollama and returns the assistant response.
-    """
-
-    if ask_ollama is None:
-        st.session_state.ollama_available = False
-        return (
-            "Ollama n'est pas encore connecté dans l'application. "
-            "Vérifiez le fichier src/ollama_client.py."
-        )
-
-    conversation_history = st.session_state.chat_history[-8:]
-
-    try:
-        response = ask_ollama(
-            user_message=user_message,
-            conversation_history=conversation_history,
-        )
-
-        st.session_state.ollama_available = True
-
-        return response
-
-    except Exception:
-        st.session_state.ollama_available = False
-
-        return (
-            "Ollama n'est pas disponible pour le moment. "
-            "Vérifiez que le modèle llama3.2:latest est installé."
-        )
-
-# ==========================================================
-# START LIVE LISTENER WHEN DASHBOARD STARTS
-# ==========================================================
-
-if not st.session_state.listener_checked:
-    listener_available, listener_status = start_live_listener_if_needed()
-
-    st.session_state.listener_available = listener_available
-    st.session_state.listener_status = listener_status
-    st.session_state.listener_checked = True
-
-
-def generate_tts_audio(text: str) -> str | None:
-    """
-    Converts assistant text response to audio using Kokoro TTS.
-    """
-
-    if synthesize_response_to_wav is None:
-        return None
-
-    try:
-        return synthesize_response_to_wav(text)
-
-    except NotImplementedError:
-        return None
-
-    except Exception as error:
-        st.warning(f"Erreur Kokoro TTS : {error}")
-        return None
-
 
 def process_chatbot_message(user_message: str):
     """
-    Sends the user message to Ollama in the background.
-
-    The dashboard does not block while Ollama generates the response.
+    Sends the user message to Ollama or answers directly when possible.
     """
 
     if not user_message:
         return
 
-    st.session_state.chatbot_open = True
-
     if st.session_state.chatbot_waiting_response:
         st.session_state.status_message = "Le chatbot traite déjà une réponse."
         return
 
-    conversation_history = st.session_state.chat_history[-8:].copy()
+    st.session_state.last_tts_audio = None
+    st.session_state.last_tts_audio_event_id = None
+    st.session_state.active_tts_request_id = None
+    st.session_state.tts_waiting_response = False
+    st.session_state.chatbot_open = True
 
     st.session_state.chat_history.append(
         {
@@ -399,22 +651,44 @@ def process_chatbot_message(user_message: str):
         }
     )
 
+    direct_answer = answer_direct_dashboard_question(user_message)
+
+    if direct_answer:
+        st.session_state.chat_history.append(
+            {
+                "role": "assistant",
+                "content": direct_answer,
+            }
+        )
+
+        st.session_state.status_message = "Réponse calculée depuis les données du dashboard."
+        start_tts_for_response(direct_answer)
+        return
+
+    conversation_history = st.session_state.chat_history[-4:].copy()
+    dashboard_context = build_dashboard_context()
+
     executor = get_chatbot_executor()
 
     st.session_state.chatbot_future = executor.submit(
         call_chatbot_in_background,
         user_message,
         conversation_history,
+        dashboard_context,
     )
 
     st.session_state.chatbot_waiting_response = True
     st.session_state.chatbot_pending_user_message = user_message
     st.session_state.status_message = "Question envoyée au chatbot."
 
+
 def check_chatbot_background_response():
     """
-    Checks if the background Ollama response is ready.
-    If ready, it adds the assistant response to the chat.
+    Checks if Ollama has finished.
+
+    When the text response is ready:
+    - displays it immediately
+    - starts Kokoro TTS in a separate background task
     """
 
     future = st.session_state.get("chatbot_future")
@@ -426,11 +700,10 @@ def check_chatbot_background_response():
         return
 
     try:
-        assistant_response, audio_path = future.result()
+        assistant_response = future.result()
 
     except Exception as error:
         assistant_response = f"Erreur chatbot : {error}"
-        audio_path = None
 
     st.session_state.chat_history.append(
         {
@@ -439,19 +712,56 @@ def check_chatbot_background_response():
         }
     )
 
-    st.session_state.last_tts_audio = audio_path
     st.session_state.chatbot_future = None
     st.session_state.chatbot_waiting_response = False
     st.session_state.chatbot_pending_user_message = None
     st.session_state.ollama_available = True
     st.session_state.status_message = "Réponse chatbot reçue."
 
+    start_tts_for_response(assistant_response)
+
+
+def check_tts_background_response():
+    """
+    Checks if Kokoro TTS has finished.
+
+    Old TTS results are ignored if a newer question was asked.
+    """
+
+    future = st.session_state.get("tts_future")
+
+    if future is None:
+        return
+
+    if not future.done():
+        return
+
+    try:
+        tts_request_id, audio_path = future.result()
+
+    except Exception:
+        tts_request_id = None
+        audio_path = None
+
+    st.session_state.tts_future = None
+    st.session_state.tts_waiting_response = False
+
+    if tts_request_id != st.session_state.get("active_tts_request_id"):
+        return
+
+    st.session_state.last_tts_audio = audio_path
+
+    if audio_path:
+        st.session_state.last_tts_audio_event_id = tts_request_id
+        st.session_state.status_message = "Audio Kokoro généré."
+    else:
+        st.session_state.last_tts_audio_event_id = None
+        st.session_state.status_message = "Réponse texte reçue, mais audio Kokoro indisponible."
+
+
 def process_voice_command(command: dict):
     """
-    Routes a parsed voice command:
-    - dashboard command
-    - chatbot command
-    - close chatbot
+    Routes a parsed voice command.
     """
 
     intent = command.get("intent")
@@ -464,6 +774,10 @@ def process_voice_command(command: dict):
     if intent == "close_chatbot":
         st.session_state.chatbot_open = False
         st.session_state.last_tts_audio = None
+        st.session_state.last_tts_audio_event_id = None
+        st.session_state.last_autoplayed_tts_audio_event_id = None
+        st.session_state.active_tts_request_id = None
+        st.session_state.tts_waiting_response = False
         st.session_state.status_message = "Chatbot fermé."
         return
 
@@ -504,9 +818,16 @@ def read_and_process_latest_voice_event():
     process_voice_command(parsed_command)
 
 
-def get_audio_html(audio_path: str | None) -> str:
+def get_audio_html(
+    audio_path: str | None,
+    autoplay: bool = False,
+    audio_event_id: str | None = None,
+) -> str:
     """
-    Creates an HTML audio player with optional autoplay.
+    Creates invisible autoplay audio.
+
+    The audio is embedded inside the chatbot HTML only when a new
+    TTS event must be played. No visible controls are displayed.
     """
 
     if not audio_path:
@@ -517,14 +838,39 @@ def get_audio_html(audio_path: str | None) -> str:
     if not path.exists():
         return ""
 
+    if not autoplay:
+        return ""
+
     try:
         audio_bytes = path.read_bytes()
         encoded_audio = base64.b64encode(audio_bytes).decode("utf-8")
 
+        if not audio_event_id:
+            audio_event_id = f"kokoro_audio_{int(time.time() * 1000)}"
+
+        safe_audio_id = escape(audio_event_id)
+
         return f"""
-        <audio controls autoplay style="width: 100%; margin-top: 10px;">
+        <audio
+            id="{safe_audio_id}"
+            autoplay
+            preload="auto"
+            style="display: none; width: 0; height: 0; opacity: 0; pointer-events: none;"
+        >
             <source src="data:audio/wav;base64,{encoded_audio}" type="audio/wav">
         </audio>
+
+        <script>
+        setTimeout(function () {{
+            const audio = document.getElementById("{safe_audio_id}");
+            if (audio) {{
+                audio.currentTime = 0;
+                audio.play().catch(function(error) {{
+                    console.log("Autoplay blocked:", error);
+                }});
+            }}
+        }}, 200);
+        </script>
         """
 
     except Exception:
@@ -534,8 +880,6 @@ def get_audio_html(audio_path: str | None) -> str:
 def render_html(html_content: str):
     """
     Renders HTML safely in Streamlit.
-
-    st.html is preferred because it avoids raw HTML appearing as visible text.
     """
 
     if hasattr(st, "html"):
@@ -543,26 +887,36 @@ def render_html(html_content: str):
     else:
         st.markdown(html_content, unsafe_allow_html=True)
 
+
+def render_scroll_anchor(anchor_id: str):
+    """
+    Renders an invisible anchor used for stable voice scrolling.
+    """
+
+    safe_anchor_id = escape(anchor_id)
+
+    render_html(
+        f"""
+        <div id="{safe_anchor_id}" style="height: 1px; width: 1px;"></div>
+        """
+    )
+
+
 def render_listener_indicator():
     """
     Displays a red/green listener indicator and the current listener text.
-
-    It does not rely on the PID file, because the listener can be started
-    manually or automatically. It relies on listener_status.json freshness.
     """
 
     listener_data = read_listener_status()
 
     is_active = False
     message = "Live listener non démarré."
-    status_label = "Écoute inactive"
 
     if listener_data:
         updated_at = listener_data.get("updated_at", 0)
         age = time.time() - updated_at
 
-        # If the listener wrote a status recently, we consider it active.
-        if age < 8:
+        if age < 10:
             is_active = bool(listener_data.get("is_active", False))
             message = listener_data.get("message") or "Listener actif."
         else:
@@ -629,9 +983,10 @@ def render_listener_indicator():
 
     render_html(html)
 
+
 def render_chatbot_popup():
     """
-    Renders the floating chatbot button or a WhatsApp-like chat popup.
+    Renders the floating chatbot button or a stable chat popup.
     """
 
     css_html = """
@@ -649,9 +1004,11 @@ def render_chatbot_popup():
         align-items: center;
         justify-content: center;
         font-size: 28px;
-        z-index: 9999;
+        z-index: 999999;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
         border: 1px solid rgba(255, 255, 255, 0.2);
+        opacity: 1 !important;
+        filter: none !important;
     }
 
     .chatbot-popup {
@@ -660,16 +1017,19 @@ def render_chatbot_popup():
         bottom: 100px;
         width: 390px;
         height: 540px;
-        background: #f3f4f6;
+        background: #f3f4f6 !important;
         color: #111827;
         border-radius: 24px;
-        z-index: 9999;
+        z-index: 999999;
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
         border: 1px solid #e5e7eb;
         font-family: Arial, sans-serif;
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        opacity: 1 !important;
+        filter: none !important;
+        backdrop-filter: none !important;
     }
 
     .chatbot-header {
@@ -679,6 +1039,7 @@ def render_chatbot_popup():
         display: flex;
         align-items: center;
         gap: 10px;
+        opacity: 1 !important;
     }
 
     .chatbot-avatar {
@@ -714,7 +1075,8 @@ def render_chatbot_popup():
         flex: 1;
         padding: 16px;
         overflow-y: auto;
-        background: linear-gradient(180deg, #f9fafb 0%, #eef2f7 100%);
+        background: #f9fafb !important;
+        opacity: 1 !important;
     }
 
     .message-row {
@@ -739,6 +1101,7 @@ def render_chatbot_popup():
         line-height: 1.42;
         word-wrap: break-word;
         white-space: pre-wrap;
+        opacity: 1 !important;
     }
 
     .bubble-user {
@@ -771,21 +1134,6 @@ def render_chatbot_popup():
         opacity: 0.7;
     }
 
-    .typing-dots {
-        display: inline-flex;
-        gap: 4px;
-        margin-left: 4px;
-        vertical-align: middle;
-    }
-
-    .typing-dots span {
-        width: 5px;
-        height: 5px;
-        background: #9ca3af;
-        border-radius: 50%;
-        display: inline-block;
-    }
-
     .chatbot-footer {
         background: #ffffff;
         border-top: 1px solid #e5e7eb;
@@ -796,10 +1144,6 @@ def render_chatbot_popup():
 
     .chatbot-footer strong {
         color: #111827;
-    }
-
-    .chatbot-audio {
-        margin-top: 10px;
     }
     </style>
     """
@@ -826,7 +1170,7 @@ def render_chatbot_popup():
         </div>
         """
     else:
-        for message in st.session_state.chat_history[-10:]:
+        for message in st.session_state.chat_history[-12:]:
             role = message.get("role", "assistant")
             content = escape(message.get("content", ""))
 
@@ -854,30 +1198,59 @@ def render_chatbot_popup():
         <div class="message-row assistant-row">
             <div class="bubble bubble-thinking">
                 <span class="bubble-label">Assistant</span>
-                Réflexion en cours
-                <span class="typing-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </span>
+                Réflexion en cours...
             </div>
         </div>
         """
 
-    audio_html = get_audio_html(st.session_state.last_tts_audio)
-
-    if audio_html:
-        audio_html = f"""
-        <div class="chatbot-audio">
-            {audio_html}
+    if st.session_state.get("tts_waiting_response"):
+        messages_html += """
+        <div class="message-row assistant-row">
+            <div class="bubble bubble-thinking">
+                <span class="bubble-label">Audio</span>
+                Préparation de la réponse vocale...
+            </div>
         </div>
         """
+
+    audio_event_id = st.session_state.get("last_tts_audio_event_id")
+    last_autoplayed_id = st.session_state.get("last_autoplayed_tts_audio_event_id")
+
+    should_autoplay = (
+        st.session_state.last_tts_audio
+        and audio_event_id
+        and audio_event_id != last_autoplayed_id
+    )
+
+    audio_html = get_audio_html(
+        st.session_state.last_tts_audio,
+        autoplay=bool(should_autoplay),
+        audio_event_id=audio_event_id,
+    )
+
+    if should_autoplay:
+        st.session_state.last_autoplayed_tts_audio_event_id = audio_event_id
 
     ollama_status = (
         "Ollama actif"
         if st.session_state.get("ollama_available")
         else "Ollama en démarrage ou indisponible"
     )
+
+    chatbot_scroll_script = """
+    <script>
+    function scrollChatbotToBottom() {
+        const container = document.getElementById("chatbot-messages-container");
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+
+    requestAnimationFrame(scrollChatbotToBottom);
+    setTimeout(scrollChatbotToBottom, 150);
+    setTimeout(scrollChatbotToBottom, 400);
+    </script>
+    """
 
     chatbot_html = f"""
     <div class="chatbot-popup">
@@ -889,7 +1262,7 @@ def render_chatbot_popup():
             </div>
         </div>
 
-        <div class="chatbot-messages">
+        <div class="chatbot-messages" id="chatbot-messages-container">
             {messages_html}
             {audio_html}
         </div>
@@ -898,9 +1271,22 @@ def render_chatbot_popup():
             Dites <strong>chatbot désactivé</strong> ou <strong>ferme chatbot</strong> pour fermer la fenêtre.
         </div>
     </div>
+
+    {chatbot_scroll_script}
     """
 
     render_html(chatbot_html)
+
+# ==========================================================
+# START LIVE LISTENER WHEN DASHBOARD STARTS
+# ==========================================================
+
+if not st.session_state.listener_checked:
+    listener_available, listener_status = start_live_listener_if_needed()
+
+    st.session_state.listener_available = listener_available
+    st.session_state.listener_status = listener_status
+    st.session_state.listener_checked = True
 
 
 # ==========================================================
@@ -909,18 +1295,20 @@ def render_chatbot_popup():
 
 read_and_process_latest_voice_event()
 check_chatbot_background_response()
-run_scroll_if_needed()
+check_tts_background_response()
 
 
 # ==========================================================
 # UI
 # ==========================================================
 
+render_scroll_anchor("voice-scroll-top")
+
 st.title("🎙️ Voice-Controlled Dashboard")
 
 st.caption(
     "Dashboard contrôlé à la voix avec wake word, commandes vocales, scroll, "
-    "et mode chatbot local via Ollama."
+    "mode chatbot local via Ollama et réponse vocale via Kokoro."
 )
 
 st.info(st.session_state.status_message)
@@ -956,6 +1344,8 @@ st.divider()
 
 st.subheader(f"Page actuelle : {get_page_label(current_page)}")
 
+render_scroll_anchor("voice-scroll-content")
+
 
 # ==========================================================
 # DASHBOARD CONTENT
@@ -985,6 +1375,8 @@ if current_page == "resume":
         sales_by_month.set_index("mois")["ventes"]
     )
 
+    render_scroll_anchor("voice-scroll-middle")
+
     st.markdown("### Ventes par région")
     st.bar_chart(
         sales_by_region.set_index("region")["ventes"]
@@ -997,6 +1389,8 @@ elif current_page == "ventes":
     st.line_chart(
         sales_by_month.set_index("mois")["ventes"]
     )
+
+    render_scroll_anchor("voice-scroll-middle")
 
     st.markdown("### Ventes par région")
     st.bar_chart(
@@ -1013,6 +1407,8 @@ elif current_page == "clients":
         sales_by_month.set_index("mois")["clients"]
     )
 
+    render_scroll_anchor("voice-scroll-middle")
+
     st.markdown("### Clients par région")
     st.bar_chart(
         sales_by_region.set_index("region")["clients"]
@@ -1028,19 +1424,12 @@ elif current_page == "regions":
         sales_by_region.set_index("region")[["ventes", "clients"]]
     )
 
+    render_scroll_anchor("voice-scroll-middle")
+
     st.dataframe(sales_by_region, use_container_width=True)
 
 
-# Extra content to test voice scroll
-st.divider()
-st.markdown("## Zone de test du scroll vocal")
-
-for index in range(1, 9):
-    st.markdown(f"### Section {index}")
-    st.write(
-        "Cette section sert à tester les commandes vocales comme "
-        "'descends', 'monte', 'tout en bas' ou 'retourne en haut'."
-    )
+render_scroll_anchor("voice-scroll-bottom")
 
 
 # ==========================================================
@@ -1059,6 +1448,18 @@ with st.expander("Debug vocal"):
 
     st.write("Historique chatbot :")
     st.json(st.session_state.chat_history)
+
+    st.write("Chatbot attend une réponse :")
+    st.write(st.session_state.chatbot_waiting_response)
+
+    st.write("TTS attend une réponse :")
+    st.write(st.session_state.tts_waiting_response)
+
+    st.write("Dernier audio TTS :")
+    st.code(st.session_state.get("last_tts_audio"))
+
+    st.write("Kokoro TTS disponible :")
+    st.write(synthesize_response_to_wav is not None)
 
     st.write("Ollama disponible :")
     st.write(st.session_state.ollama_available)
@@ -1079,13 +1480,19 @@ with st.expander("Debug vocal"):
 
 render_chatbot_popup()
 
+
+# ==========================================================
+# VOICE SCROLL
+# ==========================================================
+
+run_scroll_if_needed()
+
+
 # ==========================================================
 # AUTO REFRESH
 # ==========================================================
-# Refreshes the dashboard periodically without keeping Streamlit
-# in a permanent running/loading state.
 
 st_autorefresh(
-    interval=1500,
-    key="voice_dashboard_autorefresh"
+    interval=1000,
+    key="voice_dashboard_autorefresh",
 )

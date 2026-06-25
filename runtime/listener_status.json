@@ -1,7 +1,7 @@
 {
-  "updated_at": 1782375664.2012763,
-  "status": "recording",
-  "message": "Enregistrement en cours...",
+  "updated_at": 1782392593.9197679,
+  "status": "listening",
+  "message": "En écoute... dites Jack ou Ok Jack.",
   "is_active": true,
   "transcription": null
 }

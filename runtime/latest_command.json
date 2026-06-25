@@ -1,15 +1,17 @@
 {
-  "event_id": "d580b19e-2483-45cc-915e-673d701b917e",
-  "created_at": 1782375517.5807698,
-  "transcription": "Ok Jack, chatbot, désactivé.",
+  "event_id": "709dbe8a-2203-4eab-89f2-f4d230d1c612",
+  "created_at": 1782392572.106687,
+  "transcription": "Ok Jack, affiche les ventes par région.",
   "wake_result": {
     "activated": true,
     "wake_word": "ok jack",
-    "command_text": "chatbot desactive",
-    "original_text": "Ok Jack, chatbot, désactivé."
+    "command_text": "affiche les ventes par region",
+    "original_text": "Ok Jack, affiche les ventes par région."
   },
   "parsed_command": {
-    "intent": "close_chatbot",
-    "raw_text": "chatbot desactive"
+    "intent": "show_chart",
+    "metric": "ventes",
+    "dimension": "region",
+    "raw_text": "affiche les ventes par region"
   }
 }

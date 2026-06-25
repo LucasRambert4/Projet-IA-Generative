@@ -25,7 +25,9 @@ TEMP_AUDIO_FILE = RUNTIME_DIR / "listener_phrase.wav"
 
 FIXED_INPUT_DEVICE = 1
 FIXED_SAMPLE_RATE = 44100
-FIXED_SPEECH_THRESHOLD = 0.0065
+
+# Minimum threshold. The final threshold is calibrated dynamically.
+FIXED_SPEECH_THRESHOLD = 0.0085
 
 
 # ==========================================================
@@ -33,15 +35,17 @@ FIXED_SPEECH_THRESHOLD = 0.0065
 # ==========================================================
 
 FRAME_DURATION_SECONDS = 0.25
-START_SPEECH_FRAMES = 3
-END_SILENCE_SECONDS = 0.9
-MIN_SPEECH_SECONDS = 0.7
-MAX_UTTERANCE_SECONDS = 8
-PRE_SPEECH_SECONDS = 0.75
+START_SPEECH_FRAMES = 2
+END_SILENCE_SECONDS = 0.65
+MIN_SPEECH_SECONDS = 0.45
+MAX_UTTERANCE_SECONDS = 7.0
+
+PRE_SPEECH_SECONDS = 1.0
 PRE_SPEECH_FRAMES = int(PRE_SPEECH_SECONDS / FRAME_DURATION_SECONDS)
 
 FOLLOW_UP_SECONDS = 3
-MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
+
+MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "small")
 
 
 def print_terminal(label: str, message: str = ""):
@@ -49,6 +53,7 @@ def print_terminal(label: str, message: str = ""):
         print(f"[{label}] {message}", flush=True)
     else:
         print(f"[{label}]", flush=True)
+
 
 def publish_listener_status(
     status: str,
@@ -70,12 +75,10 @@ def publish_listener_status(
     except Exception:
         pass
 
+
 class PersistentMicrophone:
     """
     Keeps the microphone stream open permanently.
-
-    This avoids the Windows/Realtek issue where the mic only works properly
-    when another app, like a screen recorder, keeps it active.
     """
 
     def __init__(self, input_device: int, sample_rate: int):
@@ -129,30 +132,72 @@ def normalize_audio(audio: np.ndarray) -> np.ndarray:
 
     target_peak = 0.85
     gain = target_peak / peak
-    gain = min(gain, 12.0)
+    gain = min(gain, 10.0)
 
     return audio * gain
+
+
+def calibrate_speech_threshold(
+    microphone: PersistentMicrophone,
+    fallback_threshold: float,
+    calibration_seconds: float = 1.5,
+) -> float:
+    """
+    Measures ambient noise and calculates a safer speech threshold.
+
+    This reduces false microphone activations when the user is not speaking.
+    """
+
+    print_terminal("CALIBRATION", "Calibration du bruit ambiant...")
+    publish_listener_status(
+        status="calibrating",
+        message="Calibration du micro...",
+        is_active=False,
+    )
+
+    energies = []
+    start_time = time.time()
+
+    microphone.clear_queue()
+
+    while time.time() - start_time < calibration_seconds:
+        _, energy = microphone.read_frame()
+        energies.append(energy)
+
+    if not energies:
+        return fallback_threshold
+
+    median_noise = float(np.median(energies))
+    max_noise = float(np.max(energies))
+
+    calibrated_threshold = max(
+        fallback_threshold,
+        median_noise * 3.5,
+        max_noise * 1.25,
+    )
+
+    calibrated_threshold = min(calibrated_threshold, 0.035)
+
+    print_terminal(
+        "CALIBRATION",
+        f"Noise median={median_noise:.6f} | noise max={max_noise:.6f} | threshold={calibrated_threshold:.6f}",
+    )
+
+    return calibrated_threshold
 
 
 def record_full_phrase(
     microphone: PersistentMicrophone,
     sample_rate: int,
-    speech_threshold: float
+    speech_threshold: float,
 ) -> tuple[str | None, float, float]:
     """
     Waits until speech starts, then records until silence is detected.
 
     Uses a pre-speech buffer to avoid cutting the beginning of the sentence.
-    This improves wake words like "Ok Jack".
     """
 
     RUNTIME_DIR.mkdir(exist_ok=True)
-
-    publish_listener_status(
-        status="listening",
-        message="En écoute... dites Jack ou Ok Jack.",
-        is_active=True,
-    )
 
     microphone.clear_queue()
 
@@ -165,6 +210,7 @@ def record_full_phrase(
     max_energy = 0.0
     start_time = None
     above_threshold_frames = 0
+    last_status_update = 0.0
 
     while True:
         frame, energy = microphone.read_frame()
@@ -172,6 +218,16 @@ def record_full_phrase(
 
         if not is_recording:
             pre_speech_buffer.append(frame)
+
+            now = time.time()
+
+            if now - last_status_update > 2.0:
+                publish_listener_status(
+                    status="listening",
+                    message="En écoute... dites Jack ou Ok Jack.",
+                    is_active=True,
+                )
+                last_status_update = now
 
             print(
                 f"\r[WAITING] niveau micro {energy:.6f} | seuil {speech_threshold:.6f}",
@@ -242,6 +298,9 @@ def record_full_phrase(
 
         return None, speech_duration, max_energy
 
+    if not frames:
+        return None, speech_duration, max_energy
+
     audio = np.concatenate(frames, axis=0)
     audio = normalize_audio(audio)
 
@@ -253,7 +312,7 @@ def record_full_phrase(
 def send_command_to_dashboard(
     transcription: str,
     wake_result: dict,
-    parsed_command: dict
+    parsed_command: dict,
 ):
     write_command_event(
         transcription=transcription,
@@ -274,13 +333,6 @@ def process_transcription(
 ) -> tuple[bool, bool]:
     """
     Processes a transcription.
-
-    Important behavior:
-    - Normal commands require the wake word.
-    - "Ok Jack, chatbot" opens temporary chatbot mode.
-    - In chatbot mode, the next phrase is sent to Ollama.
-    - After one chatbot message, chatbot mode stops automatically.
-    - "chatbot désactivé" or "ferme chatbot" closes the chatbot.
     """
 
     transcription = transcription.strip()
@@ -294,10 +346,6 @@ def process_transcription(
 
     wake_result = wake_detector.extract_command(transcription)
 
-    # ==========================================================
-    # CASE 1: WAKE WORD DETECTED
-    # ==========================================================
-
     if wake_result["activated"]:
         command_text = wake_result["command_text"]
 
@@ -306,7 +354,7 @@ def process_transcription(
         if not command_text:
             print_terminal(
                 "SESSION",
-                f"Ok Jack détecté. En attente de la commande pendant {FOLLOW_UP_SECONDS}s."
+                f"Ok Jack détecté. En attente de la commande pendant {FOLLOW_UP_SECONDS}s.",
             )
             print()
             return True, chatbot_mode
@@ -321,7 +369,6 @@ def process_transcription(
             return False, chatbot_mode
 
         if intent == "chatbot_message":
-            # Direct command: "Ok Jack, chatbot explique les ventes"
             send_command_to_dashboard(transcription, wake_result, parsed_command)
             print_terminal("CHATBOT", "Message envoyé au chatbot.")
             print_terminal("CHATBOT", "Mode chatbot arrêté après la commande.")
@@ -336,10 +383,6 @@ def process_transcription(
         send_command_to_dashboard(transcription, wake_result, parsed_command)
         return False, chatbot_mode
 
-    # ==========================================================
-    # CASE 2: CHATBOT MODE ACTIVE
-    # ==========================================================
-
     if chatbot_mode:
         parsed_close_command = parser.parse(transcription)
 
@@ -349,7 +392,7 @@ def process_transcription(
                 "wake_word": "chatbot_mode",
                 "command_text": transcription,
                 "original_text": transcription,
-                "mode": "chatbot_close"
+                "mode": "chatbot_close",
             }
 
             send_command_to_dashboard(transcription, wake_result, parsed_close_command)
@@ -359,7 +402,7 @@ def process_transcription(
         parsed_command = {
             "intent": "chatbot_message",
             "message": transcription,
-            "raw_text": transcription
+            "raw_text": transcription,
         }
 
         wake_result = {
@@ -367,7 +410,7 @@ def process_transcription(
             "wake_word": "chatbot_mode",
             "command_text": transcription,
             "original_text": transcription,
-            "mode": "chatbot_message"
+            "mode": "chatbot_message",
         }
 
         send_command_to_dashboard(transcription, wake_result, parsed_command)
@@ -375,13 +418,7 @@ def process_transcription(
         print_terminal("CHATBOT", "Message envoyé à Ollama.")
         print_terminal("CHATBOT", "Mode chatbot arrêté automatiquement après la réponse.")
 
-        # IMPORTANT:
-        # The chatbot mode stops after one message.
         return False, False
-
-    # ==========================================================
-    # CASE 3: FOLLOW-UP AFTER ONLY "OK JACK"
-    # ==========================================================
 
     if waiting_for_follow_up_command:
         parsed_command = parser.parse(transcription)
@@ -422,10 +459,6 @@ def process_transcription(
         send_command_to_dashboard(transcription, wake_result, parsed_command)
         return False, chatbot_mode
 
-    # ==========================================================
-    # CASE 4: NO WAKE WORD AND NO CHATBOT MODE
-    # ==========================================================
-
     print_terminal("IGNORED", "Pas de wake word, phrase ignorée.")
     print()
 
@@ -441,12 +474,12 @@ def main():
         device_name = sd.query_devices(input_device)["name"]
         print_terminal(
             "MIC",
-            f"Using persistent microphone: {device_name} | device {input_device} | {sample_rate} Hz"
+            f"Using persistent microphone: {device_name} | device {input_device} | {sample_rate} Hz",
         )
     except Exception:
         print_terminal(
             "MIC",
-            f"Using persistent microphone device {input_device} | {sample_rate} Hz"
+            f"Using persistent microphone device {input_device} | {sample_rate} Hz",
         )
 
     publish_listener_status(
@@ -468,15 +501,14 @@ def main():
 
     microphone = PersistentMicrophone(
         input_device=input_device,
-        sample_rate=sample_rate
+        sample_rate=sample_rate,
     )
 
     print()
     print_terminal("LISTENER", "Phrase-based persistent microphone listener started.")
-    print_terminal("INFO", "Le micro reste ouvert en continu pour éviter les problèmes Realtek/Windows.")
     print_terminal("CONFIG", f"Input device: {input_device}")
     print_terminal("CONFIG", f"Sample rate: {sample_rate}")
-    print_terminal("CONFIG", f"Speech threshold: {speech_threshold}")
+    print_terminal("CONFIG", f"Minimum speech threshold: {speech_threshold}")
     print_terminal("CONFIG", f"End silence: {END_SILENCE_SECONDS}s")
     print_terminal("EXAMPLE", "Say: Ok Jack, chatbot")
     print_terminal("EXAMPLE", "Then say: Explique les ventes par région")
@@ -486,9 +518,15 @@ def main():
     try:
         microphone.start()
         print_terminal("MIC", "Microphone stream opened and kept alive.")
+
+        speech_threshold = calibrate_speech_threshold(
+            microphone=microphone,
+            fallback_threshold=FIXED_SPEECH_THRESHOLD,
+        )
+
         publish_listener_status(
             status="listening",
-            message="En écoute... dites Jack, puis une commande.",
+            message="En écoute... dites Jack ou Ok Jack.",
             is_active=True,
         )
         print()
@@ -502,7 +540,7 @@ def main():
             audio_path, duration, max_energy = record_full_phrase(
                 microphone=microphone,
                 sample_rate=sample_rate,
-                speech_threshold=speech_threshold
+                speech_threshold=speech_threshold,
             )
 
             if audio_path is None:
@@ -510,7 +548,7 @@ def main():
 
             print_terminal(
                 "TRANSCRIBING",
-                f"Phrase capturée ({duration:.1f}s, niveau max {max_energy:.6f})..."
+                f"Phrase capturée ({duration:.1f}s, niveau max {max_energy:.6f})...",
             )
 
             publish_listener_status(
@@ -521,7 +559,7 @@ def main():
 
             transcription = stt.transcribe_audio(
                 audio_path,
-                language="fr"
+                language="fr",
             ).strip()
 
             publish_listener_status(
