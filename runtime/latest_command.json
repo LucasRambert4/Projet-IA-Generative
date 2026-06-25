@@ -1,17 +1,15 @@
 {
-  "event_id": "a48abd34-27c9-4349-b96b-1d13be7f1f97",
-  "created_at": 1782308110.7939749,
-  "transcription": "Moi, l'analyse des ventes.",
+  "event_id": "d580b19e-2483-45cc-915e-673d701b917e",
+  "created_at": 1782375517.5807698,
+  "transcription": "Ok Jack, chatbot, désactivé.",
   "wake_result": {
     "activated": true,
-    "wake_word": "chatbot_mode",
-    "command_text": "Moi, l'analyse des ventes.",
-    "original_text": "Moi, l'analyse des ventes.",
-    "mode": "chatbot_message"
+    "wake_word": "ok jack",
+    "command_text": "chatbot desactive",
+    "original_text": "Ok Jack, chatbot, désactivé."
   },
   "parsed_command": {
-    "intent": "chatbot_message",
-    "message": "Moi, l'analyse des ventes.",
-    "raw_text": "Moi, l'analyse des ventes."
+    "intent": "close_chatbot",
+    "raw_text": "chatbot desactive"
   }
 }

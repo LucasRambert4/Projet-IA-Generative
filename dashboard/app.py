@@ -1,10 +1,12 @@
 import base64
 import os
 import subprocess
-import sys
 import time
+import sys
 from html import escape
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+from streamlit_autorefresh import st_autorefresh
 
 import pandas as pd
 import streamlit as st
@@ -25,7 +27,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 
-from src.command_bus import read_latest_command_event
+from src.command_bus import read_latest_command_event, read_listener_status
 from src.dashboard_controller import (
     initialize_dashboard_state,
     apply_dashboard_command,
@@ -56,6 +58,13 @@ st.set_page_config(
     layout="wide"
 )
 
+@st.cache_resource
+def get_chatbot_executor():
+    """
+    Creates one background worker for Ollama calls.
+    """
+    return ThreadPoolExecutor(max_workers=1)
+
 
 # ==========================================================
 # SESSION STATE
@@ -65,6 +74,15 @@ initialize_dashboard_state(st)
 
 if "chatbot_open" not in st.session_state:
     st.session_state.chatbot_open = False
+
+if "chatbot_future" not in st.session_state:
+    st.session_state.chatbot_future = None
+
+if "chatbot_waiting_response" not in st.session_state:
+    st.session_state.chatbot_waiting_response = False
+
+if "chatbot_pending_user_message" not in st.session_state:
+    st.session_state.chatbot_pending_user_message = None
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -149,6 +167,45 @@ def is_windows_process_running(pid: int) -> bool:
 
     except Exception:
         return False
+
+def call_chatbot_in_background(
+    user_message: str,
+    conversation_history: list[dict]
+) -> tuple[str, str | None]:
+    """
+    Calls Ollama and Kokoro in a background thread.
+
+    Important:
+    Do not use st.session_state inside this function.
+    """
+
+    if ask_ollama is None:
+        return (
+            "Ollama n'est pas encore connecté dans l'application. Vérifiez le fichier src/ollama_client.py.",
+            None
+        )
+
+    try:
+        assistant_response = ask_ollama(
+            user_message=user_message,
+            conversation_history=conversation_history,
+        )
+
+    except Exception:
+        assistant_response = (
+            "Ollama n'est pas disponible pour le moment. "
+            "Vérifiez que le modèle llama3.2:latest est installé."
+        )
+
+    audio_path = None
+
+    if synthesize_response_to_wav is not None:
+        try:
+            audio_path = synthesize_response_to_wav(assistant_response)
+        except Exception:
+            audio_path = None
+
+    return assistant_response, audio_path
 
 
 def is_listener_already_running() -> bool:
@@ -254,7 +311,6 @@ def run_scroll_if_needed():
     st.session_state.last_scroll_action_id = current_scroll_id
 
 
-
 def ask_chatbot(user_message: str) -> str:
     """
     Sends a message to Ollama and returns the assistant response.
@@ -320,15 +376,21 @@ def generate_tts_audio(text: str) -> str | None:
 
 def process_chatbot_message(user_message: str):
     """
-    Processes a user message in chatbot mode.
-    The popup stays open after the assistant response.
+    Sends the user message to Ollama in the background.
+
+    The dashboard does not block while Ollama generates the response.
     """
 
     if not user_message:
         return
 
-    # The visual chatbot stays open after a question.
     st.session_state.chatbot_open = True
+
+    if st.session_state.chatbot_waiting_response:
+        st.session_state.status_message = "Le chatbot traite déjà une réponse."
+        return
+
+    conversation_history = st.session_state.chat_history[-8:].copy()
 
     st.session_state.chat_history.append(
         {
@@ -337,7 +399,38 @@ def process_chatbot_message(user_message: str):
         }
     )
 
-    assistant_response = ask_chatbot(user_message)
+    executor = get_chatbot_executor()
+
+    st.session_state.chatbot_future = executor.submit(
+        call_chatbot_in_background,
+        user_message,
+        conversation_history,
+    )
+
+    st.session_state.chatbot_waiting_response = True
+    st.session_state.chatbot_pending_user_message = user_message
+    st.session_state.status_message = "Question envoyée au chatbot."
+
+def check_chatbot_background_response():
+    """
+    Checks if the background Ollama response is ready.
+    If ready, it adds the assistant response to the chat.
+    """
+
+    future = st.session_state.get("chatbot_future")
+
+    if future is None:
+        return
+
+    if not future.done():
+        return
+
+    try:
+        assistant_response, audio_path = future.result()
+
+    except Exception as error:
+        assistant_response = f"Erreur chatbot : {error}"
+        audio_path = None
 
     st.session_state.chat_history.append(
         {
@@ -346,10 +439,12 @@ def process_chatbot_message(user_message: str):
         }
     )
 
-    audio_path = generate_tts_audio(assistant_response)
     st.session_state.last_tts_audio = audio_path
-
-    st.session_state.status_message = "Réponse chatbot générée."
+    st.session_state.chatbot_future = None
+    st.session_state.chatbot_waiting_response = False
+    st.session_state.chatbot_pending_user_message = None
+    st.session_state.ollama_available = True
+    st.session_state.status_message = "Réponse chatbot reçue."
 
 def process_voice_command(command: dict):
     """
@@ -448,6 +543,91 @@ def render_html(html_content: str):
     else:
         st.markdown(html_content, unsafe_allow_html=True)
 
+def render_listener_indicator():
+    """
+    Displays a red/green listener indicator and the current listener text.
+
+    It does not rely on the PID file, because the listener can be started
+    manually or automatically. It relies on listener_status.json freshness.
+    """
+
+    listener_data = read_listener_status()
+
+    is_active = False
+    message = "Live listener non démarré."
+    status_label = "Écoute inactive"
+
+    if listener_data:
+        updated_at = listener_data.get("updated_at", 0)
+        age = time.time() - updated_at
+
+        # If the listener wrote a status recently, we consider it active.
+        if age < 8:
+            is_active = bool(listener_data.get("is_active", False))
+            message = listener_data.get("message") or "Listener actif."
+        else:
+            is_active = False
+            message = "Aucun signal récent du listener."
+
+    dot_color = "#22c55e" if is_active else "#ef4444"
+    shadow_color = "rgba(34, 197, 94, 0.18)" if is_active else "rgba(239, 68, 68, 0.18)"
+    status_label = "Écoute active" if is_active else "Écoute inactive"
+
+    safe_message = escape(message)
+    safe_status_label = escape(status_label)
+
+    html = f"""
+    <style>
+    .listener-status-wrapper {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: -4px;
+        margin-bottom: 16px;
+        padding: 10px 14px;
+        border-radius: 14px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        color: #111827;
+        font-size: 14px;
+    }}
+
+    .listener-dot {{
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: {dot_color};
+        box-shadow: 0 0 0 4px {shadow_color};
+        flex-shrink: 0;
+    }}
+
+    .listener-text {{
+        display: flex;
+        flex-direction: column;
+        line-height: 1.3;
+    }}
+
+    .listener-title {{
+        font-weight: 700;
+        font-size: 13px;
+    }}
+
+    .listener-message {{
+        font-size: 13px;
+        color: #4b5563;
+    }}
+    </style>
+
+    <div class="listener-status-wrapper">
+        <div class="listener-dot"></div>
+        <div class="listener-text">
+            <div class="listener-title">{safe_status_label}</div>
+            <div class="listener-message">{safe_message}</div>
+        </div>
+    </div>
+    """
+
+    render_html(html)
 
 def render_chatbot_popup():
     """
@@ -575,12 +755,35 @@ def render_chatbot_popup():
         border: 1px solid #e5e7eb;
     }
 
+    .bubble-thinking {
+        background: white;
+        color: #6b7280;
+        border-bottom-left-radius: 5px;
+        border: 1px solid #e5e7eb;
+        font-style: italic;
+    }
+
     .bubble-label {
         display: block;
         font-size: 11px;
         font-weight: 700;
         margin-bottom: 4px;
         opacity: 0.7;
+    }
+
+    .typing-dots {
+        display: inline-flex;
+        gap: 4px;
+        margin-left: 4px;
+        vertical-align: middle;
+    }
+
+    .typing-dots span {
+        width: 5px;
+        height: 5px;
+        background: #9ca3af;
+        border-radius: 50%;
+        display: inline-block;
     }
 
     .chatbot-footer {
@@ -646,6 +849,21 @@ def render_chatbot_popup():
                 </div>
                 """
 
+    if st.session_state.get("chatbot_waiting_response"):
+        messages_html += """
+        <div class="message-row assistant-row">
+            <div class="bubble bubble-thinking">
+                <span class="bubble-label">Assistant</span>
+                Réflexion en cours
+                <span class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </div>
+        </div>
+        """
+
     audio_html = get_audio_html(st.session_state.last_tts_audio)
 
     if audio_html:
@@ -677,7 +895,7 @@ def render_chatbot_popup():
         </div>
 
         <div class="chatbot-footer">
-            Dites <strong>chatbot désactivé</strong> ou <strong>ferme chatbot</strong> pour quitter ce mode.
+            Dites <strong>chatbot désactivé</strong> ou <strong>ferme chatbot</strong> pour fermer la fenêtre.
         </div>
     </div>
     """
@@ -685,12 +903,12 @@ def render_chatbot_popup():
     render_html(chatbot_html)
 
 
-
 # ==========================================================
 # PROCESS VOICE COMMANDS
 # ==========================================================
 
 read_and_process_latest_voice_event()
+check_chatbot_background_response()
 run_scroll_if_needed()
 
 
@@ -706,6 +924,7 @@ st.caption(
 )
 
 st.info(st.session_state.status_message)
+render_listener_indicator()
 
 
 # ==========================================================
@@ -860,12 +1079,13 @@ with st.expander("Debug vocal"):
 
 render_chatbot_popup()
 
-
 # ==========================================================
 # AUTO REFRESH
 # ==========================================================
-# The dashboard reruns regularly so it can read commands written
-# by the voice listener in runtime/latest_command.json.
+# Refreshes the dashboard periodically without keeping Streamlit
+# in a permanent running/loading state.
 
-time.sleep(0.8)
-st.rerun()
+st_autorefresh(
+    interval=1500,
+    key="voice_dashboard_autorefresh"
+)

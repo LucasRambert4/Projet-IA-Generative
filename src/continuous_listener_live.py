@@ -1,6 +1,7 @@
 import os
 import queue
 import time
+from collections import deque
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +11,7 @@ import soundfile as sf
 from stt_engine import LocalSTTEngine
 from wake_word import WakeWordDetector
 from command_parser import CommandParser
-from command_bus import write_command_event
+from command_bus import write_command_event, write_listener_status
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -36,6 +37,8 @@ START_SPEECH_FRAMES = 3
 END_SILENCE_SECONDS = 0.9
 MIN_SPEECH_SECONDS = 0.7
 MAX_UTTERANCE_SECONDS = 8
+PRE_SPEECH_SECONDS = 0.75
+PRE_SPEECH_FRAMES = int(PRE_SPEECH_SECONDS / FRAME_DURATION_SECONDS)
 
 FOLLOW_UP_SECONDS = 3
 MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
@@ -47,6 +50,25 @@ def print_terminal(label: str, message: str = ""):
     else:
         print(f"[{label}]", flush=True)
 
+def publish_listener_status(
+    status: str,
+    message: str,
+    is_active: bool = True,
+    transcription: str | None = None,
+):
+    """
+    Publishes listener status to Streamlit.
+    """
+
+    try:
+        write_listener_status(
+            status=status,
+            message=message,
+            is_active=is_active,
+            transcription=transcription,
+        )
+    except Exception:
+        pass
 
 class PersistentMicrophone:
     """
@@ -119,13 +141,24 @@ def record_full_phrase(
 ) -> tuple[str | None, float, float]:
     """
     Waits until speech starts, then records until silence is detected.
+
+    Uses a pre-speech buffer to avoid cutting the beginning of the sentence.
+    This improves wake words like "Ok Jack".
     """
 
     RUNTIME_DIR.mkdir(exist_ok=True)
 
+    publish_listener_status(
+        status="listening",
+        message="En écoute... dites Jack ou Ok Jack.",
+        is_active=True,
+    )
+
     microphone.clear_queue()
 
     frames = []
+    pre_speech_buffer = deque(maxlen=PRE_SPEECH_FRAMES)
+
     is_recording = False
     silence_duration = 0.0
     speech_duration = 0.0
@@ -138,6 +171,8 @@ def record_full_phrase(
         max_energy = max(max_energy, energy)
 
         if not is_recording:
+            pre_speech_buffer.append(frame)
+
             print(
                 f"\r[WAITING] niveau micro {energy:.6f} | seuil {speech_threshold:.6f}",
                 end="",
@@ -152,12 +187,22 @@ def record_full_phrase(
             if above_threshold_frames >= START_SPEECH_FRAMES:
                 is_recording = True
                 start_time = time.time()
-                frames.append(frame)
-                speech_duration += FRAME_DURATION_SECONDS
+
+                frames.extend(list(pre_speech_buffer))
+                speech_duration += FRAME_DURATION_SECONDS * len(pre_speech_buffer)
                 silence_duration = 0.0
 
                 print()
-                print_terminal("RECORDING", "Voix détectée, enregistrement de la phrase...")
+                print_terminal(
+                    "RECORDING",
+                    "Voix détectée, enregistrement de la phrase avec pre-roll..."
+                )
+
+                publish_listener_status(
+                    status="recording",
+                    message="Enregistrement en cours...",
+                    is_active=True,
+                )
 
             continue
 
@@ -188,6 +233,13 @@ def record_full_phrase(
 
     if speech_duration < MIN_SPEECH_SECONDS:
         print_terminal("IGNORED", "Audio trop court.")
+
+        publish_listener_status(
+            status="listening",
+            message="Audio trop court ignoré. En écoute...",
+            is_active=True,
+        )
+
         return None, speech_duration, max_energy
 
     audio = np.concatenate(frames, axis=0)
@@ -397,6 +449,12 @@ def main():
             f"Using persistent microphone device {input_device} | {sample_rate} Hz"
         )
 
+    publish_listener_status(
+        status="starting",
+        message="Chargement du modèle Whisper...",
+        is_active=False,
+    )
+
     print_terminal("START", f"Chargement de Whisper model: {MODEL_SIZE}")
     stt = LocalSTTEngine(model_size=MODEL_SIZE)
 
@@ -428,6 +486,11 @@ def main():
     try:
         microphone.start()
         print_terminal("MIC", "Microphone stream opened and kept alive.")
+        publish_listener_status(
+            status="listening",
+            message="En écoute... dites Jack, puis une commande.",
+            is_active=True,
+        )
         print()
 
         while True:
@@ -450,10 +513,23 @@ def main():
                 f"Phrase capturée ({duration:.1f}s, niveau max {max_energy:.6f})..."
             )
 
+            publish_listener_status(
+                status="transcribing",
+                message=f"Transcription en cours... audio capturé : {duration:.1f}s",
+                is_active=True,
+            )
+
             transcription = stt.transcribe_audio(
                 audio_path,
                 language="fr"
             ).strip()
+
+            publish_listener_status(
+                status="transcribed",
+                message=f"Texte entendu : {transcription}",
+                is_active=True,
+                transcription=transcription,
+            )
 
             now = time.time()
 
@@ -482,8 +558,19 @@ def main():
         print()
         print_terminal("ERROR", str(error))
 
+        publish_listener_status(
+            status="error",
+            message=f"Erreur listener : {error}",
+            is_active=False,
+        )
+
     finally:
         microphone.stop()
+        publish_listener_status(
+            status="stopped",
+            message="Live listener arrêté.",
+            is_active=False,
+        )
         print_terminal("MIC", "Microphone stream closed.")
 
 
