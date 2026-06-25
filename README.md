@@ -616,5 +616,6 @@ Projet réalisé dans le cadre d’un travail autour de l’IA générative, de 
 Développé par :
 
 ```text
-Lucas Rambert
+Julian Gabry
+Joseph Rambert
 ```
