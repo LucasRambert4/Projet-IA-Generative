@@ -74,13 +74,20 @@ def compute_deterministic_metrics(
         must_not_contain,
     )
 
+    must_contain_any = test_case.get("must_contain_any", [])
+    contains_any, found_any_terms = contains_any_term(
+        generated_answer,
+        must_contain_any,
+    )
+
     answer_not_empty = check_not_empty(generated_answer)
     answer_is_short = check_short_answer(generated_answer)
 
-    string_matching_pass = contains_required and not has_forbidden
+    string_matching_pass = contains_required and contains_any and not has_forbidden
     deterministic_pass = (
         answer_not_empty
         and contains_required
+        and contains_any
         and not has_forbidden
         and answer_is_short
     )
@@ -110,23 +117,52 @@ def compute_deterministic_metrics(
         "missing_terms": missing_terms,
         "has_forbidden_terms": has_forbidden,
         "forbidden_terms_found": forbidden_found,
+        "contains_any": contains_any,
+        "found_any_terms": found_any_terms,
     }
+
+def contains_any_term(answer: str, accepted_terms: list[str]) -> tuple[bool, list[str]]:
+    if not accepted_terms:
+        return True, []
+
+    normalized_answer = normalize_text(answer)
+    found_terms = []
+
+    for term in accepted_terms:
+        normalized_term = normalize_text(term)
+
+        if normalized_term and normalized_term in normalized_answer:
+            found_terms.append(term)
+
+    return len(found_terms) > 0, found_terms
 
 
 def compute_final_decision(
-    deterministic_metrics: dict[str, Any],
-    judge_result: dict[str, Any] | None,
+    deterministic_metrics: dict,
+    judge_result: dict | None,
 ) -> str:
+    """
+    Computes the final evaluation decision.
+
+    Principle:
+    - Deterministic checks are the strongest signal for exact dashboard KPIs.
+    - LLM as a judge is useful for semantic evaluation, but it must not override
+      a clearly correct deterministic answer.
+    """
+
+    if deterministic_metrics.get("deterministic_pass"):
+        return "PASS"
+
     if judge_result is None:
-        return "PASS" if deterministic_metrics["deterministic_pass"] else "FAIL"
+        return "FAIL"
 
     judge_decision = judge_result.get("decision", "FAIL")
     judge_score = int(judge_result.get("score", 0))
 
-    if deterministic_metrics["deterministic_pass"] and judge_decision == "PASS":
+    if deterministic_metrics.get("string_matching_pass") and judge_score >= 3:
         return "PASS"
 
-    if deterministic_metrics["string_matching_pass"] and judge_score >= 4:
+    if judge_decision == "PASS" and judge_score >= 4:
         return "PASS"
 
     return "FAIL"

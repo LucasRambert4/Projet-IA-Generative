@@ -12,6 +12,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 from streamlit_autorefresh import st_autorefresh
+from src.dashboard_ai_engine import answer_from_dashboard_facts
 
 
 # ==========================================================
@@ -737,7 +738,9 @@ def run_scroll_if_needed():
 
 def process_chatbot_message(user_message: str):
     """
-    Sends the user message to Ollama or answers directly when possible.
+    Sends the user message to the grounded AI engine first,
+    then to the old direct dashboard logic,
+    then to Ollama if needed.
     """
 
     if not user_message:
@@ -760,6 +763,27 @@ def process_chatbot_message(user_message: str):
         }
     )
 
+    # 1. New grounded AI layer.
+    # This is the main improvement after the evaluation pipeline:
+    # it forces critical dashboard answers to come from exact project data
+    # instead of letting Ollama invent or mix KPI values.
+    grounded_answer = answer_from_dashboard_facts(user_message)
+
+    if grounded_answer:
+        st.session_state.chat_history.append(
+            {
+                "role": "assistant",
+                "content": grounded_answer,
+            }
+        )
+
+        st.session_state.status_message = "Réponse ancrée dans les données exactes du dashboard."
+        start_tts_for_response(grounded_answer)
+        return
+
+    # 2. Existing direct dashboard logic.
+    # Keep this as a fallback if your current app already has additional
+    # deterministic answers not yet moved into dashboard_ai_engine.py.
     direct_answer = answer_direct_dashboard_question(user_message)
 
     if direct_answer:
@@ -774,6 +798,9 @@ def process_chatbot_message(user_message: str):
         start_tts_for_response(direct_answer)
         return
 
+    # 3. Ollama fallback.
+    # Ollama is only used when the answer cannot be resolved safely
+    # from deterministic dashboard facts.
     conversation_history = st.session_state.chat_history[-4:].copy()
     dashboard_context = build_dashboard_context()
 
@@ -789,6 +816,7 @@ def process_chatbot_message(user_message: str):
     st.session_state.chatbot_waiting_response = True
     st.session_state.chatbot_pending_user_message = user_message
     st.session_state.status_message = "Question envoyée au chatbot."
+
 
 def estimate_audio_duration_seconds(audio_path: str | None) -> float:
     """

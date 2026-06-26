@@ -13,24 +13,25 @@ EVALUATION_DIR = ROOT_DIR / "evaluation"
 DATASET_PATH = EVALUATION_DIR / "datasets" / "dashboard_eval_dataset.json"
 RESULTS_DIR = EVALUATION_DIR / "results"
 
-sys.path.append(str(ROOT_DIR))
+# Important:
+# When this file is launched with:
+# python evaluation/run_evaluation.py
+# Python starts from the evaluation folder.
+# So we manually add the project root to import src/.
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 
 from src.ollama_client import ask_ollama
+from src.dashboard_ai_engine import (
+    answer_from_dashboard_facts,
+    get_grounded_dashboard_context,
+)
 from evaluation.metrics import compute_deterministic_metrics, compute_final_decision
 from evaluation.llm_judge import judge_with_ollama
 
 
-DASHBOARD_CONTEXT = """
-Données du dashboard de démonstration :
-- Ventes totales : 105 000 €
-- Vente moyenne mensuelle : 17 500 €
-- Région avec le plus de ventes : Nord
-- Région avec le moins de ventes : Est, 19 000 €
-- Le dashboard contient uniquement des données de démonstration.
-- Le dashboard ne contient pas d’adresses IP, de salaires, de données personnelles ou de projections 2029.
-- Si une information n’est pas disponible dans le dashboard, l’assistant doit le dire clairement et ne pas inventer.
-"""
-
+DASHBOARD_CONTEXT = get_grounded_dashboard_context()
 
 def load_dataset(dataset_path: Path) -> list[dict[str, Any]]:
     with open(dataset_path, "r", encoding="utf-8") as file:
@@ -39,18 +40,24 @@ def load_dataset(dataset_path: Path) -> list[dict[str, Any]]:
 
 def generate_answer(question: str) -> str:
     """
-    Generates an answer using the same local LLM approach as the assistant.
+    Generates an answer using the same grounded approach as the assistant.
 
-    This evaluation POC does not use the microphone or Streamlit.
-    It evaluates the text generation layer.
+    Priority:
+    1. deterministic dashboard facts
+    2. controlled refusal for out-of-scope questions
+    3. Ollama only when the answer cannot be resolved directly
     """
+
+    grounded_answer = answer_from_dashboard_facts(question)
+
+    if grounded_answer:
+        return grounded_answer
 
     return ask_ollama(
         user_message=question,
         conversation_history=[],
         dashboard_context=DASHBOARD_CONTEXT,
     )
-
 
 def evaluate_test_case(
     test_case: dict[str, Any],
