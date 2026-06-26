@@ -1,3 +1,12 @@
+import sys
+from pathlib import Path
+
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 import base64
 import re
 import subprocess
@@ -108,6 +117,9 @@ initialize_dashboard_state(st)
 if "chatbot_open" not in st.session_state:
     st.session_state.chatbot_open = False
 
+if "last_processed_voice_event_id" not in st.session_state:
+    st.session_state.last_processed_voice_event_id = None
+
 if "chatbot_future" not in st.session_state:
     st.session_state.chatbot_future = None
 
@@ -180,6 +192,19 @@ if "listener_available" not in st.session_state:
 if "listener_status" not in st.session_state:
     st.session_state.listener_status = "Live listener non vérifié."
 
+
+def assistant_is_busy() -> bool:
+    """
+    True seulement quand l'assistant ne doit pas accepter une nouvelle question chatbot.
+    """
+    now = time.time()
+
+    return (
+        st.session_state.get("chatbot_waiting_response", False)
+        or st.session_state.get("tts_waiting_response", False)
+        or st.session_state.get("audio_playback_waiting", False)
+        or now < st.session_state.get("tts_audio_playing_until", 0.0)
+    )
 
 # ==========================================================
 # START OLLAMA WHEN DASHBOARD STARTS
@@ -741,13 +766,17 @@ def process_chatbot_message(user_message: str):
     Sends the user message to the grounded AI engine first,
     then to the old direct dashboard logic,
     then to Ollama if needed.
+
+    New protection:
+    - no new question is accepted while the assistant is generating or speaking
+    - the current user message is not duplicated inside the conversation history
     """
 
     if not user_message:
         return
 
-    if st.session_state.chatbot_waiting_response:
-        st.session_state.status_message = "Le chatbot traite déjà une réponse."
+    if assistant_is_busy():
+        st.session_state.status_message = "Assistant occupé : nouvelle question ignorée."
         return
 
     st.session_state.last_tts_audio = None
@@ -756,6 +785,8 @@ def process_chatbot_message(user_message: str):
     st.session_state.tts_waiting_response = False
     st.session_state.chatbot_open = True
 
+    previous_conversation_history = st.session_state.chat_history[-4:].copy()
+
     st.session_state.chat_history.append(
         {
             "role": "user",
@@ -763,10 +794,6 @@ def process_chatbot_message(user_message: str):
         }
     )
 
-    # 1. New grounded AI layer.
-    # This is the main improvement after the evaluation pipeline:
-    # it forces critical dashboard answers to come from exact project data
-    # instead of letting Ollama invent or mix KPI values.
     grounded_answer = answer_from_dashboard_facts(user_message)
 
     if grounded_answer:
@@ -781,9 +808,6 @@ def process_chatbot_message(user_message: str):
         start_tts_for_response(grounded_answer)
         return
 
-    # 2. Existing direct dashboard logic.
-    # Keep this as a fallback if your current app already has additional
-    # deterministic answers not yet moved into dashboard_ai_engine.py.
     direct_answer = answer_direct_dashboard_question(user_message)
 
     if direct_answer:
@@ -798,18 +822,13 @@ def process_chatbot_message(user_message: str):
         start_tts_for_response(direct_answer)
         return
 
-    # 3. Ollama fallback.
-    # Ollama is only used when the answer cannot be resolved safely
-    # from deterministic dashboard facts.
-    conversation_history = st.session_state.chat_history[-4:].copy()
     dashboard_context = build_dashboard_context()
-
     executor = get_chatbot_executor()
 
     st.session_state.chatbot_future = executor.submit(
         call_chatbot_in_background,
         user_message,
-        conversation_history,
+        previous_conversation_history,
         dashboard_context,
     )
 
@@ -817,6 +836,10 @@ def process_chatbot_message(user_message: str):
     st.session_state.chatbot_pending_user_message = user_message
     st.session_state.status_message = "Question envoyée au chatbot."
 
+    write_listener_pause(
+        duration_seconds=60.0,
+        reason="assistant_generating_response",
+    )
 
 def estimate_audio_duration_seconds(audio_path: str | None) -> float:
     """
@@ -979,8 +1002,14 @@ def process_voice_command(command: dict):
 
 def read_and_process_latest_voice_event():
     """
-    Reads latest command from runtime/latest_command.json
-    and processes it only once.
+    Reads the latest voice event and routes it to the existing project router.
+
+    This version is intentionally robust because the listener can write events
+    in slightly different formats:
+    - {"command": {"intent": "..."}}
+    - {"intent": "...", "message": "..."}
+    - {"command": "scroll_down", "text": "..."}
+    - {"parsed_command": {...}}
     """
 
     event = read_latest_command_event()
@@ -988,22 +1017,133 @@ def read_and_process_latest_voice_event():
     if not event:
         return
 
-    event_id = event.get("event_id")
+    # Debug: keep the raw event visible in the Streamlit debug panel.
+    st.session_state.last_raw_voice_event = event
 
-    if not event_id:
-        return
+    event_id = (
+        event.get("event_id")
+        or event.get("id")
+        or event.get("command_id")
+        or event.get("created_at")
+        or event.get("timestamp")
+        or event.get("updated_at")
+        or str(event)
+    )
 
-    if event_id == st.session_state.last_processed_event_id:
+    if event_id == st.session_state.get("last_processed_event_id"):
         return
 
     st.session_state.last_processed_event_id = event_id
 
-    st.session_state.last_transcription = event.get("transcription")
-    st.session_state.last_wake_result = event.get("wake_result")
+    command = None
 
-    parsed_command = event.get("parsed_command", {})
+    # Case 1: command is already a dict.
+    for key in ["command", "parsed_command", "parsed", "payload", "data"]:
+        value = event.get(key)
 
-    process_voice_command(parsed_command)
+        if isinstance(value, dict):
+            command = value.copy()
+            break
+
+    # Case 2: command is a string.
+    if command is None and isinstance(event.get("command"), str):
+        command = {
+            "intent": event.get("command"),
+        }
+
+    # Case 3: event itself contains the command fields.
+    if command is None:
+        command = {}
+
+    # Fill missing intent from possible fields.
+    intent = (
+        command.get("intent")
+        or command.get("action")
+        or command.get("type")
+        or command.get("name")
+        or event.get("intent")
+        or event.get("action")
+        or event.get("type")
+        or event.get("name")
+    )
+
+    message = (
+        command.get("message")
+        or command.get("chatbot_message")
+        or command.get("text")
+        or command.get("transcript")
+        or event.get("message")
+        or event.get("chatbot_message")
+        or event.get("text")
+        or event.get("transcript")
+        or event.get("transcription")
+        or ""
+    )
+
+    transcript = (
+        event.get("transcript")
+        or event.get("transcription")
+        or event.get("text")
+        or message
+        or ""
+    )
+
+    if intent:
+        intent = str(intent).strip().lower()
+
+    message = str(message).strip()
+    transcript = str(transcript).strip()
+
+    # Normalize common intent aliases.
+    intent_aliases = {
+        "chatbot_open": "open_chatbot",
+        "open_chat": "open_chatbot",
+        "ouvrir_chatbot": "open_chatbot",
+        "ouvrir_chat": "open_chatbot",
+
+        "chatbot_close": "close_chatbot",
+        "close_chat": "close_chatbot",
+        "fermer_chatbot": "close_chatbot",
+        "fermer_chat": "close_chatbot",
+
+        "ask_chatbot": "chatbot_message",
+        "chat_message": "chatbot_message",
+        "question_chatbot": "chatbot_message",
+    }
+
+    if intent in intent_aliases:
+        intent = intent_aliases[intent]
+
+    # If no intent but chatbot is open and there is text, treat it as a chatbot message.
+    if not intent and st.session_state.get("chatbot_open", False) and message:
+        intent = "chatbot_message"
+
+    if intent:
+        command["intent"] = intent
+
+    if message:
+        command["message"] = message
+
+    st.session_state.last_transcription = transcript
+    st.session_state.last_command = command
+
+    if not intent:
+        st.session_state.status_message = "Commande reçue mais aucun intent reconnu."
+        return
+
+    # Always allow closing the chatbot.
+    if intent == "close_chatbot":
+        process_voice_command(command)
+        return
+
+    # Block only new chatbot questions while the assistant is generating or speaking.
+    if intent == "chatbot_message" and assistant_is_busy():
+        st.session_state.status_message = "Assistant occupé : question ignorée."
+        return
+
+    st.session_state.status_message = f"Commande vocale traitée : {intent}"
+    process_voice_command(command)
+
 
 
 def get_audio_html(
@@ -1717,6 +1857,9 @@ with st.expander("Debug vocal"):
 
     st.write("Dernière commande :")
     st.json(st.session_state.get("last_command"))
+
+    st.write("Dernier event brut :")
+    st.json(st.session_state.get("last_raw_voice_event"))
 
     st.write("Chatbot ouvert :")
     st.write(st.session_state.chatbot_open)

@@ -1,15 +1,17 @@
 {
-  "event_id": "d06b73da-340a-4be0-928e-2e2608a82dea",
-  "created_at": 1782415187.3196595,
-  "transcription": "Ok Jack ferme chatbot.",
+  "event_id": "79a5d992-6984-40db-863b-f7a2230de0e6",
+  "created_at": 1782468478.116004,
+  "transcription": "Je pense qu'il en a un ça non ?",
   "wake_result": {
     "activated": true,
-    "wake_word": "ok jack",
-    "command_text": "ferme chatbot",
-    "original_text": "Ok Jack ferme chatbot."
+    "wake_word": "chatbot_mode",
+    "command_text": "Je pense qu'il en a un ça non ?",
+    "original_text": "Je pense qu'il en a un ça non ?",
+    "mode": "chatbot_message"
   },
   "parsed_command": {
-    "intent": "close_chatbot",
-    "raw_text": "ferme chatbot"
+    "intent": "chatbot_message",
+    "message": "Je pense qu'il en a un ça non ?",
+    "raw_text": "Je pense qu'il en a un ça non ?"
   }
 }

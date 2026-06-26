@@ -84,6 +84,7 @@ def build_system_prompt(dashboard_context: str | None = None) -> dict:
             "Tu dois utiliser les données fournies pour calculer les moyennes, totaux, maximums "
             "et comparaisons lorsque c'est possible. "
             "Tu ne dois pas dire qu'une donnée est absente si elle peut être calculée avec le contexte. "
+            "Ne dis jamais à l’utilisateur qu’il a déjà posé la question. Même si la question est répétée, réponds normalement. "
             "Si l'utilisateur parle de visiteurs, comprends-le comme les clients du dashboard, "
             "sauf indication contraire. "
             "Réponds en français. "
